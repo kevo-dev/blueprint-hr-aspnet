@@ -1,0 +1,32 @@
+# .NET
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Node
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+
+# Logs and local data
+*.log
+*.db
+*.sqlite
+.DS_Store
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Temporary artifacts
+coverage/
