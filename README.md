@@ -24,14 +24,14 @@ backend/
   BluePrintHr.Api/
     Controllers/       REST endpoints
     Contracts/         Request and response records
-    Data/              EF Core context and seed initializer
+    Data/              EF Core context, design-time factory, migrations, and seed initializer
     Models/            HR domain entities and enums
     Services/          Password, request context, payroll calculation
   BluePrintHr.Api.Tests/  xUnit payroll tests
 frontend/
   src/                 React dashboard, API client, and styles
 reports/                SSRS PayrollSummary and EmployeeRoster RDL files
-database/               SQL Server bootstrap schema
+database/               EF migration script and standalone SQL Server schema
 docker-compose.yml      SQL Server Developer container for local development
 ```
 
@@ -49,34 +49,54 @@ docker compose up -d sqlserver
 
 The development compose file uses SQL Server Developer Edition on `localhost:1433` with the sample password shown in the compose file. Replace it before sharing or deploying the environment.
 
-### 3. Configure the API
+### 3. Configure the API and run the initial migration
 
-For a fast development run, the API automatically uses the in-memory provider when `ASPNETCORE_ENVIRONMENT=Development`. For SQL Server, set `Database:UseInMemory` to `false` and provide `ConnectionStrings:DefaultConnection` in `backend/BluePrintHr.Api/appsettings.json` or an environment-specific settings file.
+For a fast development run, the API automatically uses the in-memory provider when `ASPNETCORE_ENVIRONMENT=Development`. For SQL Server, override the connection string and database flags through environment variables so credentials are not committed to source control:
 
-To apply the explicit SQL Server schema:
+```bash
+export ConnectionStrings__DefaultConnection='Server=localhost,1433;Database=BluePrintHr;User Id=sa;Password=Your_strong_password123!;TrustServerCertificate=True;MultipleActiveResultSets=True'
+export Database__UseInMemory=false
+export Database__ApplyMigrations=true
+```
+
+The repository includes a local .NET tool manifest for EF Core. Restore it once from the repository root:
+
+```bash
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"
+dotnet tool restore
+```
+
+Inspect the migration list and apply the initial migration:
+
+```bash
+dotnet ef migrations list \
+  --project backend/BluePrintHr.Api/BluePrintHr.Api.csproj \
+  --startup-project backend/BluePrintHr.Api/BluePrintHr.Api.csproj \
+  --context BluePrintHrDbContext
+
+dotnet ef database update \
+  --project backend/BluePrintHr.Api/BluePrintHr.Api.csproj \
+  --startup-project backend/BluePrintHr.Api/BluePrintHr.Api.csproj \
+  --context BluePrintHrDbContext
+```
+
+The migration is stored under `backend/BluePrintHr.Api/Migrations/`, and `database/InitialCreate.sql` is an idempotent SQL script generated from the same migration. You may apply that script with `sqlcmd` instead of `dotnet ef database update`:
 
 ```bash
 sqlcmd -S localhost,1433 -U sa -P 'Your_strong_password123!' -C \
-  -i database/001_schema.sql
+  -i database/InitialCreate.sql
 ```
 
-Then set:
+Do not apply both `database/InitialCreate.sql` and `database/001_schema.sql` to the same empty database. The former is the authoritative EF migration deployment script; the latter remains a standalone schema reference for environments that do not use EF migrations.
 
-```json
-{
-  "Database": {
-    "UseInMemory": false,
-    "ApplyMigrations": false
-  }
-}
-```
-
-The API's initializer is idempotent and seeds the first tenant when the database is empty. Set `Database:ApplyMigrations` to `true` if a migration history is introduced later.
+When the API starts with `Database:ApplyMigrations=true`, it runs pending migrations before seeding the first tenant. Development settings explicitly keep the in-memory provider and do not run SQL Server migrations.
 
 ### 4. Run the API
 
 ```bash
-export PATH="$HOME/.dotnet:$PATH"
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"
 cd backend/BluePrintHr.Api
 ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5000 dotnet run
 ```
@@ -135,9 +155,13 @@ Deploy both RDL files to an SSRS folder such as `/BluePrintHR`, create a shared 
 The current implementation has been verified with:
 
 ```bash
-dotnet build backend/BluePrintHr.Api/BluePrintHr.Api.csproj --no-restore
-dotnet test backend/BluePrintHr.Api.Tests/BluePrintHr.Api.Tests.csproj --no-restore
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$HOME/.dotnet:$HOME/.dotnet/tools:$PATH"
+dotnet tool restore
+dotnet ef migrations list --project backend/BluePrintHr.Api/BluePrintHr.Api.csproj --startup-project backend/BluePrintHr.Api/BluePrintHr.Api.csproj
+dotnet build BluePrintHr.sln --configuration Release
+dotnet test BluePrintHr.sln --configuration Release --no-build
 cd frontend && pnpm build
 ```
 
-The API build, four xUnit tests, and React production build complete successfully.
+The solution build, three payroll xUnit tests, React production build, migration generation, and idempotent SQL script generation complete successfully.
