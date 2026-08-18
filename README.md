@@ -12,7 +12,7 @@ The port includes cookie-based authentication, five source-aligned roles, tenant
 | --- | --- |
 | Backend | ASP.NET Core 8 Web API with controllers, cookie sessions, role policies, and OpenAPI/Swagger in development |
 | Database | EF Core 8 with SQL Server provider; development can use the in-memory provider for fast local runs |
-| Frontend | React 19 + TypeScript + Vite, with a role-aware dashboard and responsive dark workspace UI |
+| Frontend | React 19 + TypeScript + Vite, with a role-aware dashboard, responsive dark workspace UI, typed API client, cookie credentials, and local proxy |
 | Reporting | SSRS-ready `.rdl` files, report catalog API, and server-side launch URLs |
 | Security | Tenant claim on every session, tenant predicates in data queries, role policies, HttpOnly cookie, audit records |
 | Payroll | Gross pay, PAYE, personal relief, NSSF, SHIF, Housing Levy, other deductions, net pay |
@@ -113,7 +113,24 @@ pnpm install
 pnpm dev
 ```
 
-The default frontend API URL is `http://localhost:5000`. Override it in `frontend/.env.local` with `VITE_API_URL` when the API is hosted elsewhere.
+In local development, leave `VITE_API_URL` empty. Vite proxies `/api/*` and `/health` to `VITE_API_PROXY_TARGET`, which defaults to `http://localhost:5000`. The typed API client sends `credentials: include` so the ASP.NET Core HttpOnly cookie session is preserved.
+
+For a production build, copy `frontend/.env.production.example` to `.env.production` and set the public API origin:
+
+```bash
+VITE_API_URL=https://api.example.com
+pnpm build
+```
+
+When the frontend and API are hosted on different origins, configure the API with the deployed frontend origin and secure cross-origin cookies:
+
+```bash
+export Cors__AllowedOrigins__0=https://app.example.com
+export Auth__CookieSameSite=None
+export Auth__RequireHttps=true
+```
+
+The CORS policy allows credentials only for explicitly configured origins. Do not use `AllowAnyOrigin` with the cookie-authenticated API.
 
 ## Seeded credentials
 
@@ -164,4 +181,4 @@ dotnet test BluePrintHr.sln --configuration Release --no-build
 cd frontend && pnpm build
 ```
 
-The solution build, three payroll xUnit tests, React production build, migration generation, and idempotent SQL script generation complete successfully.
+The solution build, three payroll xUnit tests, React production build, migration generation, idempotent SQL script generation, Vite proxy checks, and browser login/dashboard smoke test complete successfully.

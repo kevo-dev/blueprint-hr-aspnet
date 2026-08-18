@@ -23,12 +23,18 @@ else
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
 builder.Services.AddScoped<IPayrollCalculator, KenyaPayrollCalculator>();
+var configuredSameSite = builder.Configuration["Auth:CookieSameSite"];
+var cookieSameSite = Enum.TryParse<SameSiteMode>(configuredSameSite, ignoreCase: true, out var parsedSameSite)
+    ? parsedSameSite
+    : SameSiteMode.Lax;
+var requireHttpsForCookies = builder.Configuration.GetValue<bool>("Auth:RequireHttps");
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
     options.Cookie.Name = "blueprint_hr_session";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = cookieSameSite;
+    options.Cookie.SecurePolicy = requireHttpsForCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
     options.ExpireTimeSpan = TimeSpan.FromHours(12);
     options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>
