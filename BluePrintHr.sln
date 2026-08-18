@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{82EA4262-C91B-4CBA-A603-205D3BBEC3DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BluePrintHr.Api", "backend\BluePrintHr.Api\BluePrintHr.Api.csproj", "{F36DCC3E-C327-4FA1-9F2D-00F6726A6BF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BluePrintHr.Api.Tests", "backend\BluePrintHr.Api.Tests\BluePrintHr.Api.Tests.csproj", "{594F0405-FB58-4BA9-9598-B31513BD17FE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F36DCC3E-C327-4FA1-9F2D-00F6726A6BF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F36DCC3E-C327-4FA1-9F2D-00F6726A6BF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F36DCC3E-C327-4FA1-9F2D-00F6726A6BF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F36DCC3E-C327-4FA1-9F2D-00F6726A6BF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{594F0405-FB58-4BA9-9598-B31513BD17FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{594F0405-FB58-4BA9-9598-B31513BD17FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{594F0405-FB58-4BA9-9598-B31513BD17FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{594F0405-FB58-4BA9-9598-B31513BD17FE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F36DCC3E-C327-4FA1-9F2D-00F6726A6BF9} = {82EA4262-C91B-4CBA-A603-205D3BBEC3DB}
+		{594F0405-FB58-4BA9-9598-B31513BD17FE} = {82EA4262-C91B-4CBA-A603-205D3BBEC3DB}
+	EndGlobalSection
+EndGlobal
