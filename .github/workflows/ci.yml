@@ -1,36 +1,93 @@
-name: Build and test
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   backend:
+    name: Build and test ASP.NET Core
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - run: dotnet restore BluePrintHr.sln
-      - run: dotnet build BluePrintHr.sln --configuration Release --no-restore
-      - run: dotnet test BluePrintHr.sln --configuration Release --no-build --verbosity normal
+
+      - name: Restore solution
+        run: dotnet restore BluePrintHr.sln
+
+      - name: Restore local .NET tools
+        run: dotnet tool restore
+
+      - name: Build solution
+        run: dotnet build BluePrintHr.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test BluePrintHr.sln --configuration Release --no-build --verbosity normal
+
+      - name: Generate idempotent EF Core SQL script
+        run: >-
+          dotnet ef migrations script --idempotent
+          --project backend/BluePrintHr.Api/BluePrintHr.Api.csproj
+          --startup-project backend/BluePrintHr.Api/BluePrintHr.Api.csproj
+          --context BluePrintHrDbContext
+          --output ${{ runner.temp }}/InitialCreate.sql
+
+      - name: Upload migration script
+        uses: actions/upload-artifact@v4
+        with:
+          name: ef-migration-script
+          path: ${{ runner.temp }}/InitialCreate.sql
+          if-no-files-found: error
 
   frontend:
+    name: Build and lint React
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: 10
-      - uses: actions/setup-node@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+
+      - name: Install frontend dependencies
         working-directory: frontend
-      - run: pnpm build
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontend
         working-directory: frontend
+        run: pnpm lint
+
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm build
+
+      - name: Upload frontend bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          if-no-files-found: error

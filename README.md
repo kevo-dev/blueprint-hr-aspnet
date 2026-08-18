@@ -32,8 +32,18 @@ frontend/
   src/                 React dashboard, API client, and styles
 reports/                SSRS PayrollSummary and EmployeeRoster RDL files
 database/               EF migration script and standalone SQL Server schema
+deploy/                 Production Dockerfiles, Compose template, nginx, and env example
+docs/                   CI/CD, deployment, secrets, SSRS, and release runbooks
+scripts/                Local CI/CD and SSRS validation helpers
+.github/workflows/      CI, image publishing, deployment, and report validation
 docker-compose.yml      SQL Server Developer container for local development
 ```
+
+## CI/CD and deployment
+
+The repository includes GitHub Actions workflows for validation, GHCR image publication, and manually approved Docker-host deployment. Start with [`docs/CICD_SETUP.md`](docs/CICD_SETUP.md), then use [`docs/DEPLOYMENT_RUNBOOK.md`](docs/DEPLOYMENT_RUNBOOK.md), [`docs/SSRS-CICD.md`](docs/SSRS-CICD.md), [`docs/REPOSITORY_SECRETS.md`](docs/REPOSITORY_SECRETS.md), and [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md). The production container templates are under [`deploy/`](deploy/), and the committed workflow files are [`ci.yml`](.github/workflows/ci.yml), [`publish-images.yml`](.github/workflows/publish-images.yml), and [`deploy-vm.yml`](.github/workflows/deploy-vm.yml).
+
+The default release path is: merge through protected `main`, create an annotated `v*.*.*` tag, let the image workflow publish the API and React images to GHCR, apply the reviewed SQL Server migration, and manually approve the production deployment workflow. SQL Server and SSRS remain external services in the Linux container template.
 
 ## Local setup
 
@@ -47,14 +57,15 @@ Install .NET 8 SDK, Node.js 20 or later, pnpm, and Docker Desktop or Docker Engi
 docker compose up -d sqlserver
 ```
 
-The development compose file uses SQL Server Developer Edition on `localhost:1433` with the sample password shown in the compose file. Replace it before sharing or deploying the environment.
+The development Compose file requires `MSSQL_SA_PASSWORD` to be supplied through the shell or a local `.env` file. Never commit the real SQL Server password.
 
 ### 3. Configure the API and run the initial migration
 
 For a fast development run, the API automatically uses the in-memory provider when `ASPNETCORE_ENVIRONMENT=Development`. For SQL Server, override the connection string and database flags through environment variables so credentials are not committed to source control:
 
 ```bash
-export ConnectionStrings__DefaultConnection='Server=localhost,1433;Database=BluePrintHr;User Id=sa;Password=Your_strong_password123!;TrustServerCertificate=True;MultipleActiveResultSets=True'
+export MSSQL_SA_PASSWORD='replace-with-a-local-strong-password'
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=BluePrintHr;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True;MultipleActiveResultSets=True"
 export Database__UseInMemory=false
 export Database__ApplyMigrations=true
 ```
@@ -84,7 +95,7 @@ dotnet ef database update \
 The migration is stored under `backend/BluePrintHr.Api/Migrations/`, and `database/InitialCreate.sql` is an idempotent SQL script generated from the same migration. You may apply that script with `sqlcmd` instead of `dotnet ef database update`:
 
 ```bash
-sqlcmd -S localhost,1433 -U sa -P 'Your_strong_password123!' -C \
+sqlcmd -S localhost,1433 -U sa -P "$MSSQL_SA_PASSWORD" -C \
   -i database/InitialCreate.sql
 ```
 

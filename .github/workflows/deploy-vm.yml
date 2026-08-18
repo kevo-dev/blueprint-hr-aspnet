@@ -1,0 +1,92 @@
+name: Deploy to Docker host
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to deploy from GHCR, for example v1.0.0 or latest
+        required: true
+        default: latest
+        type: string
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy approved release
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    env:
+      API_IMAGE: ghcr.io/${{ github.repository_owner }}/blueprint-hr-api
+      WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/blueprint-hr-web
+      IMAGE_TAG: ${{ inputs.image_tag }}
+    steps:
+      - name: Validate deployment configuration
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PATH DEPLOY_KNOWN_HOSTS DEPLOY_SSH_PRIVATE_KEY GHCR_READ_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "Missing production secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure SSH
+        env:
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+      - name: Pull images and restart Docker Compose services
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_READ_TOKEN" | ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "docker login ghcr.io --username '${{ github.repository_owner }}' --password-stdin && \
+             cd '$DEPLOY_PATH' && \
+             export API_IMAGE='$API_IMAGE' WEB_IMAGE='$WEB_IMAGE' IMAGE_TAG='$IMAGE_TAG' && \
+             docker compose --env-file deploy/.env.production -f deploy/production.compose.yml pull api web && \
+             docker compose --env-file deploy/.env.production -f deploy/production.compose.yml up -d --remove-orphans api web && \
+             docker compose --env-file deploy/.env.production -f deploy/production.compose.yml ps && \
+             docker image prune --force --filter 'until=168h'"
+
+      - name: Verify public health endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$APP_URL" ]; then
+            echo 'APP_URL is not configured; skipping public health check.'
+            exit 0
+          fi
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error --location "$APP_URL/health"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Public health check failed.' >&2
+          exit 1
