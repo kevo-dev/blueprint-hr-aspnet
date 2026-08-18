@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The operating model is ready for infrastructure-specific hardening</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --bg: #F5F7F8; --navy: #0A3622; --body: #2D3748; --green: #38A169; --line: #B8C7BE; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: var(--bg); color: var(--body); font-family: Arial, Helvetica, sans-serif; position: relative; }
+    .frame { min-height: 720px; padding-top: 50px; padding-left: 64px; padding-right: 64px; position: relative; }
+    .frame:before { content: ""; position: absolute; left: 30px; top: 0; min-height: 720px; width: 8px; background: var(--green); }
+    
+    .eyebrow { color: var(--green); font-size: 14px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+    h2 { margin: 12px 0 0; color: var(--navy); font-family: Georgia, "Times New Roman", serif; font-size: 42px; line-height: 1.05; max-width: 1000px; }
+    
+    .security-table { width: 100%; border-collapse: collapse; margin-top: 32px; font-size: 15px; }
+    .security-table th { text-align: left; color: var(--navy); border-bottom: 2px solid var(--navy); padding-top: 10px; padding-bottom: 10px; font-family: Georgia, "Times New Roman", serif; font-size: 20px; }
+    .security-table td { vertical-align: top; border-bottom: 1px solid var(--line); padding-top: 16px; padding-bottom: 16px; line-height: 1.4; }
+    .security-table td:nth-child(1) { width: 20%; color: var(--navy); font-weight: 700; font-size: 16px; }
+    .security-table td:nth-child(2) { width: 40%; padding-right: 24px; }
+    .security-table td:nth-child(3) { width: 40%; color: #153D2B; background: rgba(56,161,105,.04); padding-left: 16px; padding-right: 16px; border-left: 1px solid var(--line); }
+    
+    .closing-block { margin-top: 32px; background: rgba(56,161,105,.10); border-left: 6px solid var(--green); border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-top: 20px; padding-left: 24px; padding-right: 24px; min-height: 100px; }
+    .closing-block p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--navy); }
+    .closing-block strong { font-family: Georgia, "Times New Roman", serif; font-size: 18px; }
+    
+    .footer { position: absolute; left: 64px; right: 64px; bottom: 24px; border-top: 1px solid var(--line); padding-top: 10px; display: flex; justify-content: space-between; color: #6D7B74; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">09 / Security & Operations</div>
+      <h2>The operating model is ready for infrastructure-specific hardening</h2>
+      
+      <table class="security-table">
+        <tr>
+          <th>Area</th>
+          <th>Current control</th>
+          <th>Next hardening step</th>
+        </tr>
+        <tr>
+          <td>GitHub Actions</td>
+          <td>Least-privilege permissions and protected deployment environment.</td>
+          <td>Pin third-party actions to full SHAs if required by policy.</td>
+        </tr>
+        <tr>
+          <td>Secrets</td>
+          <td>Environment-scoped SSH/GHCR secrets; SQL/SSRS credentials stay on host/secret manager.</td>
+          <td>Rotate keys/tokens and enable secret scanning/push protection.</td>
+        </tr>
+        <tr>
+          <td>Runtime</td>
+          <td>Non-root API image, localhost-bound containers, HTTPS reverse proxy.</td>
+          <td>Add centralized logs, metrics, and uptime alerts.</td>
+        </tr>
+        <tr>
+          <td>Database</td>
+          <td>Reviewed EF script, backup-before-migration policy.</td>
+          <td>Add staging restore rehearsal and migration approval evidence.</td>
+        </tr>
+        <tr>
+          <td>Reporting</td>
+          <td>RDLs in source control and XML validation.</td>
+          <td>Add Windows runner or approved SSRS publish adapter.</td>
+        </tr>
+      </table>
+      
+      <div class="closing-block">
+        <p><strong>Status:</strong> The repository now has a repeatable path from pull request to validated artifacts, versioned images, approved deployment, health verification, and rollback-ready operations. The remaining decisions are infrastructure-specific: production host, public URLs, SQL Server/SSRS endpoints, and the organization's secret-management policy.</p>
+      </div>
+      
+      <div class="footer">
+        <span>BluePrint HR</span>
+        <span>Security and operations</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

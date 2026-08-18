@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Same-origin locally, explicit origins in production</title>
+  <style>
+    * { box-sizing:border-box; }
+    :root { --bg:#F5F7F8; --navy:#0A3622; --body:#2D3748; --green:#38A169; --line:#B8C7BE; --soft:#E9F3EC; --dark:#153D2B; }
+    body { margin:0; }
+    .slide-container { width:1280px; min-height:720px; background:var(--bg); color:var(--body); font-family:Arial, Helvetica, sans-serif; }
+    .frame { min-height:720px; padding-top:50px; padding-left:64px; padding-right:64px; position:relative; }
+    .frame:before { content:""; position:absolute; left:30px; top:0; min-height:720px; width:8px; background:var(--green); }
+    .eyebrow { color:var(--green); font-size:14px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+    h2 { margin:12px 0 0; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:42px; line-height:1.05; }
+    .lede { margin-top:12px; max-width:900px; font-size:18px; line-height:1.35; }
+    
+    .flows { margin-top:24px; display:grid; row-gap:16px; }
+    .flow-row { display:flex; align-items:stretch; background:#FFFFFF; border:1px solid var(--line); border-left:6px solid var(--navy); min-height:100px; }
+    .flow-row.prod { border-left-color:var(--green); background:rgba(56,161,105,.05); }
+    
+    .flow-label { width:160px; padding:16px; border-right:1px solid var(--line); display:flex; flex-direction:column; justify-content:center; }
+    .flow-label strong { color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:22px; }
+    .flow-label span { font-size:12px; color:#5B6B63; text-transform:uppercase; letter-spacing:1px; margin-top:4px; font-weight:700; }
+    
+    .flow-diagram { flex:1; display:flex; align-items:center; padding:0 24px; gap:16px; }
+    .node { background:rgba(10,54,34,.06); border:1px solid var(--line); padding:12px 16px; font-size:15px; font-weight:700; color:var(--navy); text-align:center; min-width:140px; }
+    .node.highlight { background:rgba(56,161,105,.16); border-color:var(--green); }
+    .edge { flex:1; height:2px; background:var(--line); position:relative; display:flex; justify-content:center; align-items:center; }
+    .edge::after { content:""; position:absolute; right:0; top:-4px; border-left:8px solid var(--line); border-top:5px solid transparent; border-bottom:5px solid transparent; }
+    .edge span { background:var(--bg); padding:2px 8px; font-size:12px; color:#5B6B63; font-weight:700; letter-spacing:0.5px; transform:translateY(-12px); }
+    .flow-row.prod .edge span { background:var(--soft); }
+    
+    .details { margin-top:24px; display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; }
+    .detail-card { background:#FFFFFF; border-top:3px solid var(--green); padding:16px; border-bottom:1px solid var(--line); border-left:1px solid var(--line); border-right:1px solid var(--line); }
+    .detail-card h4 { margin:0 0 8px 0; color:var(--navy); font-size:16px; }
+    .detail-card p { margin:0; font-size:14px; line-height:1.4; color:var(--body); }
+    .detail-card code { background:rgba(10,54,34,.06); padding:2px 6px; font-size:13px; color:var(--navy); }
+    
+    .footer { position:absolute; left:64px; right:64px; bottom:24px; border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; color:#6D7B74; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">04 / Frontend integration</div>
+      <h2>Same-origin locally, explicit origins in production</h2>
+      <p class="lede">The React client has one API contract that works through a Vite proxy in development and an absolute API origin in production.</p>
+      
+      <div class="flows">
+        <div class="flow-row">
+          <div class="flow-label">
+            <strong>Local</strong>
+            <span>Development</span>
+          </div>
+          <div class="flow-diagram">
+            <div class="node">Browser :5173</div>
+            <div class="edge"><span>Vite proxy /api</span></div>
+            <div class="node highlight">ASP.NET Core :5000</div>
+          </div>
+        </div>
+        
+        <div class="flow-row prod">
+          <div class="flow-label">
+            <strong>Production</strong>
+            <span>Deployment</span>
+          </div>
+          <div class="flow-diagram">
+            <div class="node">Browser HTTPS</div>
+            <div class="edge"><span>CORS + secure cookie</span></div>
+            <div class="node highlight">API HTTPS</div>
+            <div class="edge"><span>Private route</span></div>
+            <div class="node">SQL Server / SSRS</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="details">
+        <div class="detail-card">
+          <h4>Environment-based routing</h4>
+          <p><code>VITE_API_URL</code> is empty locally so Vite proxies <code>/api/*</code> and <code>/health</code>. In production, <code>VITE_API_URL=https://api.example.com</code> is embedded into the React build.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Cookie sessions</h4>
+          <p>API requests use <code>credentials: include</code> to maintain the ASP.NET Core authentication cookie across both same-origin and cross-origin boundaries.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Cross-origin security</h4>
+          <p>Separate production origins require explicit CORS origins, <code>SameSite=None</code>, <code>Secure</code>, and HTTPS to be configured on the API.</p>
+        </div>
+        <div class="detail-card">
+          <h4>Credential isolation</h4>
+          <p>The browser receives no SQL Server or SSRS passwords. All protected service communication originates from the backend API.</p>
+        </div>
+      </div>
+      
+      <div class="footer"><span>BluePrint HR</span><span>Frontend API integration</span></div>
+    </div>
+  </div>
+</body>
+</html>

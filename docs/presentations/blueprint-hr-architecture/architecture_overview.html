@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>One product, four cooperating layers</title>
+  <style>
+    * { box-sizing:border-box; }
+    :root { --bg:#F5F7F8; --navy:#0A3622; --body:#2D3748; --green:#38A169; --line:#B8C7BE; --soft:#E9F3EC; }
+    body { margin:0; }
+    .slide-container { width:1280px; min-height:720px; background:var(--bg); color:var(--body); font-family:Arial, Helvetica, sans-serif; }
+    .frame { min-height:720px; padding-top:52px; padding-left:64px; padding-right:64px; position:relative; }
+    .frame:before { content:""; position:absolute; left:30px; top:0; min-height:720px; width:8px; background:var(--green); }
+    .eyebrow { font-size:14px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; color:var(--green); }
+    h2 { margin:12px 0 0; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:42px; line-height:1.05; font-weight:700; }
+    .lede { margin-top:12px; max-width:760px; font-size:18px; line-height:1.35; color:var(--body); }
+    .main { display:grid; grid-template-columns: 1.65fr .95fr; column-gap:48px; margin-top:18px; align-items:start; }
+    .bands { display:grid; row-gap:8px; }
+    .band { min-height:64px; display:grid; grid-template-columns:190px 1fr; align-items:center; padding-left:18px; padding-right:18px; border:1px solid var(--line); border-left:8px solid var(--green); }
+    .band:nth-child(1) { background:#FFFFFF; }
+    .band:nth-child(2) { background:rgba(56,161,105,.12); margin-left:18px; }
+    .band:nth-child(3) { background:rgba(10,54,34,.06); margin-left:36px; }
+    .band:nth-child(4) { background:rgba(56,161,105,.18); margin-left:54px; }
+    .band-title { color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:24px; font-weight:700; }
+    .band-copy { font-size:15px; line-height:1.25; }
+    .side { border-top:2px solid var(--navy); padding-top:12px; }
+    .side-label { color:var(--green); text-transform:uppercase; letter-spacing:1.5px; font-size:12px; font-weight:700; }
+    table { border-collapse:collapse; width:100%; margin-top:10px; font-size:13px; }
+    th { text-align:left; color:var(--navy); border-bottom:2px solid var(--navy); padding-top:6px; padding-bottom:6px; }
+    td { vertical-align:top; border-bottom:1px solid var(--line); padding-top:8px; padding-bottom:8px; line-height:1.25; }
+    td:first-child { width:34%; color:var(--navy); font-weight:700; }
+    .insight { margin-top:12px; border-top:1px solid var(--line); padding-top:12px; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:20px; line-height:1.2; max-width:1020px; }
+    .footer { position:absolute; left:64px; right:64px; bottom:12px; border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; color:#6D7B74; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">01 / Platform shape</div>
+      <h2>One product, four cooperating layers</h2>
+      <p class="lede">The platform separates user experience, business APIs, relational persistence, and reporting so each concern can evolve without exposing operational credentials to the browser.</p>
+      <div class="main">
+        <div class="bands">
+          <div class="band"><div class="band-title">React + Vite</div><div class="band-copy">Dashboard, login, employee workflows, payroll, leave, ESS, audit, and report launch surfaces.</div></div>
+          <div class="band"><div class="band-title">ASP.NET Core 8</div><div class="band-copy">Cookie sessions, role policies, tenant scope, domain workflows, audit writes, and report metadata.</div></div>
+          <div class="band"><div class="band-title">SQL Server</div><div class="band-copy">Users, tenants, employees, payroll, leave, audit history, and the report catalog.</div></div>
+          <div class="band"><div class="band-title">SSRS</div><div class="band-copy">Parameterized operational reports rendered by the report server, outside the OLTP boundary.</div></div>
+        </div>
+        <div class="side">
+          <div class="side-label">Boundary responsibilities</div>
+          <table>
+            <tr><th>Layer</th><th>Primary question</th></tr>
+            <tr><td>React</td><td>What should the user see and do?</td></tr>
+            <tr><td>API</td><td>Is the action allowed for this role and tenant?</td></tr>
+            <tr><td>SQL Server</td><td>What is the durable business record?</td></tr>
+            <tr><td>SSRS</td><td>How should approved data be rendered?</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="insight">The API is the control plane: it coordinates identity, tenant policy, transactional data, and reporting metadata.</div>
+      <div class="footer"><span>BluePrint HR</span><span>Runtime architecture</span></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -45,6 +45,8 @@ The repository includes GitHub Actions workflows for validation, GHCR image publ
 
 The default release path is: merge through protected `main`, create an annotated `v*.*.*` tag, let the image workflow publish the API and React images to GHCR, apply the reviewed SQL Server migration, and manually approve the production deployment workflow. SQL Server and SSRS remain external services in the Linux container template.
 
+The architecture and delivery strategy presentation, its slide-by-slide outline, and generated HTML slide project are versioned under [`docs/presentations/blueprint-hr-architecture/`](docs/presentations/blueprint-hr-architecture/).
+
 ## Local setup
 
 ### 1. Prerequisites

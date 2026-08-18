@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A tenant-aware HR domain on SQL Server</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --bg: #F5F7F8; --navy: #0A3622; --body: #2D3748; --green: #38A169; --line: #B8C7BE; }
+    body { margin: 0; }
+    .slide-container { width: 1280px; min-height: 720px; background: var(--bg); color: var(--body); font-family: Arial, Helvetica, sans-serif; position: relative; }
+    .frame { min-height: 720px; padding-top: 50px; padding-left: 64px; padding-right: 64px; position: relative; }
+    .frame:before { content: ""; position: absolute; left: 30px; top: 0; min-height: 720px; width: 8px; background: var(--green); }
+    
+    .eyebrow { color: var(--green); font-size: 14px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+    h2 { margin: 12px 0 0; color: var(--navy); font-family: Georgia, "Times New Roman", serif; font-size: 42px; line-height: 1.05; }
+    .lede { margin-top: 12px; max-width: 900px; font-size: 18px; line-height: 1.35; }
+    
+    .content-grid { display: grid; grid-template-columns: 1.1fr 1fr; column-gap: 60px; margin-top: 28px; align-items: start; }
+    
+    /* Left Column: Entity Clusters */
+    .clusters { display: grid; row-gap: 12px; }
+    .cluster { padding-top: 14px; padding-left: 18px; padding-right: 18px; min-height: 80px; border: 1px solid var(--line); border-left: 8px solid var(--green); }
+    .cluster:nth-child(1) { background: #FFFFFF; }
+    .cluster:nth-child(2) { background: rgba(56,161,105,.10); margin-left: 16px; }
+    .cluster:nth-child(3) { background: rgba(10,54,34,.06); margin-left: 32px; }
+    .cluster:nth-child(4) { background: rgba(56,161,105,.18); margin-left: 48px; }
+    
+    .cluster-title { color: var(--navy); font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .cluster-flow { font-size: 14px; font-weight: 700; color: #5B6B63; letter-spacing: 0.5px; }
+    .cluster-flow span { color: var(--green); margin: 0 6px; }
+    
+    /* Right Column: Data Strategy Table */
+    .strategy-section { border-top: 2px solid var(--navy); padding-top: 14px; }
+    .strategy-label { color: var(--green); text-transform: uppercase; letter-spacing: 1.5px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+    
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th { text-align: left; color: var(--navy); border-bottom: 2px solid var(--navy); padding-top: 8px; padding-bottom: 8px; }
+    td { vertical-align: top; border-bottom: 1px solid var(--line); padding-top: 12px; padding-bottom: 12px; line-height: 1.35; }
+    td:first-child { width: 32%; color: var(--navy); font-weight: 700; }
+    
+    .footer { position: absolute; left: 64px; right: 64px; bottom: 24px; border-top: 1px solid var(--line); padding-top: 10px; display: flex; justify-content: space-between; color: #6D7B74; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">03 / Domain & Data</div>
+      <h2>A tenant-aware HR domain on SQL Server</h2>
+      <p class="lede">EF Core models preserve the source HR workflows while giving SQL Server a durable relational model and a controlled migration path.</p>
+      
+      <div class="content-grid">
+        <!-- Left: Entity Clusters -->
+        <div class="clusters">
+          <div class="cluster">
+            <div class="cluster-title">Tenant / Organization</div>
+            <div class="cluster-flow">Tenant <span>→</span> Branch <span>→</span> Department <span>→</span> Designation <span>→</span> Employee</div>
+          </div>
+          <div class="cluster">
+            <div class="cluster-title">Identity / Governance</div>
+            <div class="cluster-flow">User <span>→</span> Role claims <span>→</span> AuditLog</div>
+          </div>
+          <div class="cluster">
+            <div class="cluster-title">Payroll</div>
+            <div class="cluster-flow">Employee <span>→</span> PayrollPeriod <span>→</span> PayrollTransaction</div>
+          </div>
+          <div class="cluster">
+            <div class="cluster-title">Leave / ESS</div>
+            <div class="cluster-flow">Employee <span>→</span> LeaveBalance <span>→</span> LeaveRequest</div>
+          </div>
+        </div>
+        
+        <!-- Right: Data Strategy -->
+        <div class="strategy-section">
+          <div class="strategy-label">Data Strategy & Controls</div>
+          <table>
+            <tr>
+              <th>Concern</th>
+              <th>Approach</th>
+            </tr>
+            <tr>
+              <td>Schema evolution</td>
+              <td>EF Core migrations plus idempotent SQL release scripts.</td>
+            </tr>
+            <tr>
+              <td>Local development</td>
+              <td>Optional SQL Server container; in-memory provider for fast tests.</td>
+            </tr>
+            <tr>
+              <td>Tenant safety</td>
+              <td>Tenant ID derived from authenticated claims and applied in queries.</td>
+            </tr>
+            <tr>
+              <td>Payroll</td>
+              <td>Deterministic calculation of PAYE, NSSF, SHIF, Housing Levy, and net pay.</td>
+            </tr>
+            <tr>
+              <td>Auditability</td>
+              <td>Mutating endpoints automatically create immutable audit records.</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      
+      <div class="footer">
+        <span>BluePrint HR</span>
+        <span>Domain and data design</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

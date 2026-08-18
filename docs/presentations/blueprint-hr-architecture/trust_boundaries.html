@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The browser never owns the sensitive boundary</title>
+  <style>
+    * { box-sizing:border-box; }
+    :root { --bg:#F5F7F8; --navy:#0A3622; --body:#2D3748; --green:#38A169; --line:#B8C7BE; --soft:#E9F3EC; --dark:#153D2B; }
+    .slide-container { width:1280px; min-height:720px; background:var(--bg); color:var(--body); font-family:Arial, Helvetica, sans-serif; }
+    .frame { min-height:720px; padding-top:50px; padding-left:64px; padding-right:64px; position:relative; }
+    .frame:before { content:""; position:absolute; left:30px; top:0; min-height:720px; width:8px; background:var(--green); }
+    .eyebrow { color:var(--green); font-size:14px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+    h2 { margin:12px 0 0; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:42px; line-height:1.05; }
+    .lede { margin-top:12px; max-width:830px; font-size:18px; line-height:1.35; }
+    /* Reduced spacing to shave vertical height */
+    .zones { margin-top:12px; display:grid; grid-template-columns: 1fr 1.45fr 1fr; align-items:start; column-gap:0; }
+    .zone { min-height:200px; padding-top:8px; padding-left:18px; padding-right:18px; border-top:2px solid var(--navy); border-bottom:1px solid var(--line); }
+    .zone.browser { background:#FFFFFF; }
+    .zone.api { background:rgba(56,161,105,.16); border:2px solid var(--green); border-top-width:6px; }
+    .zone.protected { background:rgba(10,54,34,.06); }
+    .zone-label { color:var(--green); font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; }
+    .zone h3 { margin:12px 0 0; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:28px; }
+    .zone p { margin-top:10px; font-size:15px; line-height:1.3; }
+    .connector { display:flex; align-items:center; justify-content:center; color:var(--green); font-size:24px; font-weight:700; min-height:24px; }
+    .mini { margin-top:10px; border-top:1px solid var(--line); padding-top:6px; font-size:13px; line-height:1.3; color:#5B6B63; }
+    .controls { margin-top:12px; display:grid; grid-template-columns:repeat(4, 1fr); column-gap:12px; }
+    .control { min-height:60px; padding-top:8px; padding-left:12px; padding-right:10px; background:rgba(255,255,255,.72); border-top:5px solid var(--green); border-bottom:1px solid var(--line); }
+    .control strong { display:block; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:18px; }
+    .control span { display:block; margin-top:6px; font-size:13px; line-height:1.25; }
+    .footer { position:absolute; left:64px; right:64px; bottom:24px; border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; color:#6D7B74; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">02 / Trust boundaries</div>
+      <h2>The browser never owns the sensitive boundary</h2>
+      <p class="lede">The API is the policy enforcement point. Tenant scope comes from the authenticated session, while SQL Server and SSRS credentials remain server-side.</p>
+      <div class="zones">
+        <section class="zone browser">
+          <div class="zone-label">Public browser</div>
+          <h3>React bundle</h3>
+          <p>Renders the workspace and sends credentialed REST requests. It does not decide tenant scope or hold database credentials.</p>
+          <div class="mini">HTTPS request + HttpOnly cookie</div>
+        </section>
+        <div class="connector">→</div>
+        <section class="zone api">
+          <div class="zone-label">API trust boundary</div>
+          <h3>ASP.NET Core</h3>
+          <p>Authenticates the session, evaluates role policies, derives tenant and employee scope, writes audits, and returns safe report metadata.</p>
+          <div class="mini">The control plane for identity, policy, transactions, and reporting</div>
+        </section>
+        <div class="connector">→</div>
+        <section class="zone protected">
+          <div class="zone-label">Protected services</div>
+          <h3>SQL Server + SSRS</h3>
+          <p>Store and render approved data behind private routes. The browser never receives their credentials.</p>
+          <div class="mini">Private network / server-side access</div>
+        </section>
+      </div>
+      <div class="controls">
+        <div class="control"><strong>Role policies</strong><span>Five source-aligned roles govern access.</span></div>
+        <div class="control"><strong>Tenant predicates</strong><span>Normal operations derive tenant ID from claims.</span></div>
+        <div class="control"><strong>Audit writes</strong><span>Mutating endpoints leave a trace.</span></div>
+        <div class="control"><strong>Credential isolation</strong><span>SQL and SSRS secrets stay off the client.</span></div>
+      </div>
+      <div class="footer"><span>BluePrint HR</span><span>Security boundary</span></div>
+    </div>
+  </div>
+</body>
+</html>

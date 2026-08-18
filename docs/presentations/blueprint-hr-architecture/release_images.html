@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Version tags create immutable release candidates</title>
+  <style>
+    * { box-sizing:border-box; }
+    :root { --bg:#F5F7F8; --navy:#0A3622; --body:#2D3748; --green:#38A169; --line:#B8C7BE; }
+    body { margin:0; }
+    .slide-container { width:1280px; min-height:720px; background:var(--bg); color:var(--body); font-family:Arial, Helvetica, sans-serif; position:relative; }
+    .frame { min-height:720px; padding-top:50px; padding-left:64px; padding-right:64px; position:relative; }
+    .frame:before { content:""; position:absolute; left:30px; top:0; min-height:720px; width:8px; background:var(--green); }
+    .eyebrow { color:var(--green); font-size:14px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+    h2 { margin:12px 0 0; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:42px; line-height:1.05; }
+    .lede { margin-top:12px; max-width:900px; font-size:18px; line-height:1.35; }
+    
+    .flow-container { margin-top:28px; display:flex; align-items:center; justify-content:space-between; background:#FFFFFF; border:1px solid var(--line); border-left:6px solid var(--navy); padding:20px 24px; min-height:120px; }
+    .flow-step { display:flex; flex-direction:column; align-items:center; text-align:center; width:160px; }
+    .flow-step.wide { width:220px; }
+    .step-box { background:rgba(56,161,105,.12); border:1px solid var(--green); padding:12px 16px; font-size:15px; font-weight:700; color:var(--navy); width:100%; min-height:64px; display:flex; align-items:center; justify-content:center; }
+    .step-box.dark { background:rgba(10,54,34,.06); border-color:var(--navy); }
+    .step-box.accent { background:rgba(56,161,105,.25); border-color:var(--green); }
+    .arrow { color:var(--green); font-size:24px; font-weight:700; }
+    
+    .properties-section { margin-top:32px; border-top:2px solid var(--navy); padding-top:14px; }
+    .properties-label { color:var(--green); text-transform:uppercase; letter-spacing:1.5px; font-size:12px; font-weight:700; margin-bottom:12px; }
+    
+    table { border-collapse:collapse; width:100%; font-size:14px; }
+    th { text-align:left; color:var(--navy); border-bottom:2px solid var(--navy); padding-top:8px; padding-bottom:8px; }
+    td { vertical-align:top; border-bottom:1px solid var(--line); padding-top:12px; padding-bottom:12px; line-height:1.35; }
+    td:first-child { width:25%; color:var(--navy); font-weight:700; }
+    
+    .footer { position:absolute; left:64px; right:64px; bottom:24px; border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; color:#6D7B74; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">06 / Release & Publishing</div>
+      <h2>Version tags create immutable release candidates</h2>
+      <p class="lede">Publishing is separated from validation and happens only on <code>v*.*.*</code> tags or explicit manual dispatch, ensuring that only intentional releases reach the container registry.</p>
+      
+      <div class="flow-container">
+        <div class="flow-step">
+          <div class="step-box dark">Green main branch</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="step-box">Annotated v1.0.0 tag</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step wide">
+          <div class="step-box">Resolve FRONTEND_API_URL</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step wide">
+          <div class="step-box">Build API & React images</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step wide">
+          <div class="step-box accent">GHCR + Provenance attestations</div>
+        </div>
+      </div>
+      
+      <div class="properties-section">
+        <div class="properties-label">Release Properties</div>
+        <table>
+          <tr>
+            <th>Property</th>
+            <th>Design choice</th>
+          </tr>
+          <tr>
+            <td>Image registry</td>
+            <td>GitHub Container Registry (GHCR)</td>
+          </tr>
+          <tr>
+            <td>Image names</td>
+            <td><code>blueprint-hr-api</code> and <code>blueprint-hr-web</code></td>
+          </tr>
+          <tr>
+            <td>React configuration</td>
+            <td>Public API origin supplied through repository variable or manual input.</td>
+          </tr>
+          <tr>
+            <td>Tags</td>
+            <td>Version tag, commit SHA, and <code>latest</code> for version releases.</td>
+          </tr>
+          <tr>
+            <td>Supply chain</td>
+            <td>Build metadata, cached layers, and provenance attestations.</td>
+          </tr>
+          <tr>
+            <td>Credentials</td>
+            <td><code>GITHUB_TOKEN</code> package write permission; no database passwords.</td>
+          </tr>
+        </table>
+      </div>
+      
+      <div class="footer"><span>BluePrint HR</span><span>Image publication</span></div>
+    </div>
+  </div>
+</body>
+</html>

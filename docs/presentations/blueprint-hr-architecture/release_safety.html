@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Release safety is more than a green build</title>
+  <style>
+    * { box-sizing:border-box; }
+    :root { --bg:#F5F7F8; --navy:#0A3622; --body:#2D3748; --green:#38A169; --line:#B8C7BE; }
+    body { margin:0; }
+    .slide-container { width:1280px; min-height:720px; background:var(--bg); color:var(--body); font-family:Arial, Helvetica, sans-serif; position:relative; }
+    .frame { min-height:720px; padding-top:50px; padding-left:64px; padding-right:64px; position:relative; }
+    .frame:before { content:""; position:absolute; left:30px; top:0; min-height:720px; width:8px; background:var(--green); }
+    .eyebrow { color:var(--green); font-size:14px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase; }
+    h2 { margin:12px 0 0; color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:42px; line-height:1.05; }
+    .lede { margin-top:12px; max-width:960px; font-size:18px; line-height:1.35; }
+    
+    .tracks-container { margin-top:28px; display:flex; align-items:center; gap:24px; }
+    .tracks { display:flex; flex-direction:column; gap:12px; width:500px; }
+    .track { background:#FFFFFF; border:1px solid var(--line); border-left:6px solid var(--green); min-height:56px; display:flex; align-items:center; padding-left:16px; padding-right:16px; font-size:16px; font-weight:700; color:var(--navy); }
+    .track:nth-child(2) { background:rgba(56,161,105,.10); border-left-color:var(--navy); }
+    .track:nth-child(3) { background:rgba(10,54,34,.06); border-left-color:var(--green); }
+    
+    .merge-arrows { display:flex; flex-direction:column; justify-content:space-between; height:150px; color:var(--green); font-size:24px; font-weight:700; }
+    .merge-arrows span { display:flex; align-items:center; min-height:56px; }
+    
+    .approved { background:rgba(10,54,34,.85); color:#FFFFFF; font-weight:700; font-size:20px; padding-top:16px; min-height:192px; width:280px; text-align:center; letter-spacing:1px; text-transform:uppercase; border:2px solid var(--navy); display:flex; align-items:center; justify-content:center; }
+    
+    .policies { margin-top:32px; border-top:2px solid var(--navy); padding-top:20px; display:grid; grid-template-columns:1fr 1fr; column-gap:48px; row-gap:16px; }
+    .policy { display:flex; align-items:flex-start; gap:12px; }
+    .policy-icon { color:var(--green); font-size:18px; font-weight:700; padding-top:2px; }
+    .policy-text { font-size:15px; line-height:1.4; }
+    .policy-text strong { color:var(--navy); font-family:Georgia, "Times New Roman", serif; font-size:18px; display:block; margin-bottom:4px; }
+    
+    .footer { position:absolute; left:64px; right:64px; bottom:24px; border-top:1px solid var(--line); padding-top:10px; display:flex; justify-content:space-between; color:#6D7B74; font-size:12px; }
+  </style>
+</head>
+<body>
+  <div class="slide-container">
+    <div class="frame">
+      <div class="eyebrow">08 / Release Safety</div>
+      <h2>Release safety is more than a green build</h2>
+      <p class="lede">Schema and reporting changes have explicit review points because application rollback alone cannot undo a data migration.</p>
+      
+      <div class="tracks-container">
+        <div class="tracks">
+          <div class="track">Application image (API & Web)</div>
+          <div class="track">EF SQL script + Database backup</div>
+          <div class="track">SSRS RDL + Query/parameter review</div>
+        </div>
+        <div class="merge-arrows">
+          <span>→</span>
+          <span>→</span>
+          <span>→</span>
+        </div>
+        <div class="approved">Approved<br>Release</div>
+      </div>
+      
+      <div class="policies">
+        <div class="policy">
+          <div class="policy-icon">■</div>
+          <div class="policy-text">
+            <strong>Controlled migrations</strong>
+            CI generates an idempotent EF SQL script for review. Production migrations run as a controlled database step, not concurrently from multiple API replicas.
+          </div>
+        </div>
+        <div class="policy">
+          <div class="policy-icon">■</div>
+          <div class="policy-text">
+            <strong>Backward compatibility</strong>
+            Prefer expand/migrate/contract changes. Add nullable columns first, deploy code that reads both shapes, and remove old columns in a later release.
+          </div>
+        </div>
+        <div class="policy">
+          <div class="policy-icon">■</div>
+          <div class="policy-text">
+            <strong>Backup before schema change</strong>
+            Always take a SQL Server backup before applying a schema change. Use database restore for data-loss rollback.
+          </div>
+        </div>
+        <div class="policy">
+          <div class="policy-icon">■</div>
+          <div class="policy-text">
+            <strong>Rollback boundaries</strong>
+            Keep the previous image tag and report definitions for rollback. Do not assume an older image reverses the database schema.
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer"><span>BluePrint HR</span><span>Release safety & rollback</span></div>
+    </div>
+  </div>
+</body>
+</html>
