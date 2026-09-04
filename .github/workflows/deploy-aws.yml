@@ -1,0 +1,109 @@
+name: Deploy BlueprintHR API to AWS Elastic Beanstalk
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'deploy/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-aws.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  APPLICATION_NAME: blueprint-hr-api
+  ENVIRONMENT_NAME: blueprint-hr-api-prod
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  deploy:
+    name: Deploy API to AWS Elastic Beanstalk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore backend/BluePrintHr.Api/BluePrintHr.Api.csproj
+
+      - name: Build
+        run: dotnet build backend/BluePrintHr.Api/BluePrintHr.Api.csproj --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test backend/BluePrintHr.Api.Tests/BluePrintHr.Api.Tests.csproj --configuration Release --no-restore --verbosity normal
+
+      - name: Configure AWS credentials with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Deploy to Elastic Beanstalk
+        uses: aws-actions/aws-elasticbeanstalk-deploy@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          application-name: ${{ env.APPLICATION_NAME }}
+          environment-name: ${{ env.ENVIRONMENT_NAME }}
+          platform-arn: arn:aws:elasticbeanstalk:${{ env.AWS_REGION }}::platform/Docker running on 64bit Amazon Linux 2023
+          create-application-if-not-exists: true
+          create-environment-if-not-exists: true
+          wait-for-deployment: true
+          wait-for-environment-recovery: true
+          deployment-timeout: 1200
+          option-settings: |
+            [
+              {
+                "Namespace": "aws:elasticbeanstalk:environment",
+                "OptionName": "EnvironmentType",
+                "Value": "SingleInstance"
+              },
+              {
+                "Namespace": "aws:autoscaling:launchconfiguration",
+                "OptionName": "IamInstanceProfile",
+                "Value": "aws-elasticbeanstalk-ec2-role"
+              },
+              {
+                "Namespace": "aws:elasticbeanstalk:environment",
+                "OptionName": "ServiceRole",
+                "Value": "aws-elasticbeanstalk-service-role"
+              },
+              {
+                "Namespace": "aws:elasticbeanstalk:environment:process:default",
+                "OptionName": "HealthCheckPath",
+                "Value": "/health"
+              },
+              {
+                "Namespace": "aws:elasticbeanstalk:environment:process:default",
+                "OptionName": "Port",
+                "Value": "8080"
+              },
+              {
+                "Namespace": "aws:elasticbeanstalk:application:environment",
+                "OptionName": "ASPNETCORE_ENVIRONMENT",
+                "Value": "Production"
+              },
+              {
+                "Namespace": "aws:elasticbeanstalk:application:environment",
+                "OptionName": "Database__UseInMemory",
+                "Value": "true"
+              },
+              {
+                "Namespace": "aws:elasticbeanstalk:application:environment",
+                "OptionName": "Auth__RequireHttps",
+                "Value": "true"
+              }
+            ]
