@@ -2,6 +2,8 @@
 
 This directory contains deployment templates for the portable Docker-host option.
 
+For Railway, deploy the frontend and backend as separate services instead of deploying the repository root as one service. Use `deploy/frontend.Dockerfile` for the frontend service and `backend/backend.Dockerfile` for the backend service, both with the repository root as the build context. Add Railway PostgreSQL as a separate managed service and connect it only to the backend. See [the Railway architecture guide](../docs/RAILWAY_ARCHITECTURE.md).
+
 | File | Commit? | Purpose |
 |---|---:|---|
 | `backend.Dockerfile` | Yes | Builds the ASP.NET Core API image |
