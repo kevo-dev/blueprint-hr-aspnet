@@ -70,6 +70,7 @@ export const api = {
   periods: () => request<PayrollPeriod[]>('/api/payroll/periods'),
   transactions: (periodId: number) => request<PayrollTransaction[]>(`/api/payroll/transactions?payrollPeriodId=${periodId}`),
   processPayroll: (body: Record<string, unknown>) => request<PayrollTransaction[]>('/api/payroll/process', json(body)),
+  createPayrollPeriod: (body: Record<string, unknown>) => request<PayrollPeriod>('/api/payroll/periods', json(body)),
   lockPayrollPeriod: (id: number) => request<void>(`/api/payroll/periods/${id}/lock`, { method: 'POST' }),
   payrollComponents: (employeeId?: number) => request<PayrollComponent[]>(`/api/payroll/components${employeeId ? `?employeeId=${employeeId}` : ''}`),
   createPayrollComponent: (body: Record<string, unknown>) => request<PayrollComponent>('/api/payroll/components', json(body)),
