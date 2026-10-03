@@ -22,3 +22,7 @@ public record UpdateLeaveStatusRequest(LeaveRequestStatus Status);
 public record AuditLogDto(int Id, string Action, string EntityType, int? EntityId, string? UserName, string? Details, DateTime CreatedAt);
 public record ReportDefinitionDto(int Id, string Name, string Description, string ReportPath, string? LaunchUrl);
 public record ReportDataDto(string Name, string Description, IReadOnlyList<string> Columns, IReadOnlyList<IReadOnlyList<string>> Rows, DateTime GeneratedAt);
+
+public record AttendanceDto(int Id, int EmployeeId, string EmployeeName, string EmployeeNo, DateTime AttendanceDate, DateTime? CheckIn, DateTime? CheckOut, string Status, decimal HoursWorked, string? Notes);
+public record AttendanceSummaryDto(DateTime From, DateTime To, int Present, int Late, int Absent, int Leave, int HalfDay, decimal HoursWorked);
+public record CreateAttendanceRequest(int EmployeeId, DateTime AttendanceDate, DateTime? CheckIn, DateTime? CheckOut, AttendanceStatus Status, decimal? HoursWorked, string? Notes);
