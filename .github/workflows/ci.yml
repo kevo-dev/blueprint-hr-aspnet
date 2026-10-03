@@ -84,4 +84,5 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - run: dotnet restore tests/BluePrintHr.Api.Tests/BluePrintHr.Api.Tests.csproj
       - run: dotnet test tests/BluePrintHr.Api.Tests/BluePrintHr.Api.Tests.csproj --configuration Release --no-restore
