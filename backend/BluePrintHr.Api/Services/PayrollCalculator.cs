@@ -13,7 +13,7 @@ public sealed record PayrollCalculation(
 
 public interface IPayrollCalculator
 {
-    PayrollCalculation Calculate(decimal basicSalary, decimal allowances, decimal otherDeductions);
+    PayrollCalculation Calculate(decimal basicSalary, decimal allowances, decimal otherDeductions, decimal? taxableAllowances = null);
 }
 
 public sealed class KenyaPayrollCalculator : IPayrollCalculator
@@ -24,13 +24,14 @@ public sealed class KenyaPayrollCalculator : IPayrollCalculator
     private const decimal ShifRate = 0.0275m;
     private const decimal HousingLevyRate = 0.015m;
 
-    public PayrollCalculation Calculate(decimal basicSalary, decimal allowances, decimal otherDeductions)
+    public PayrollCalculation Calculate(decimal basicSalary, decimal allowances, decimal otherDeductions, decimal? taxableAllowances = null)
     {
         var gross = Math.Round(basicSalary + allowances, 2);
         var nssf = Math.Round(Math.Min(gross, NssfUpperLimit) * NssfRate, 2);
         var shif = Math.Round(gross * ShifRate, 2);
         var housingLevy = Math.Round(gross * HousingLevyRate, 2);
-        var taxablePay = Math.Max(gross - nssf, 0);
+        var taxableGross = basicSalary + (taxableAllowances ?? allowances);
+        var taxablePay = Math.Max(taxableGross - nssf, 0);
         var payeBeforeRelief = CalculatePaye(taxablePay);
         var paye = Math.Max(payeBeforeRelief - PersonalRelief, 0);
         var deductions = Math.Round(paye + nssf + shif + housingLevy + otherDeductions, 2);
