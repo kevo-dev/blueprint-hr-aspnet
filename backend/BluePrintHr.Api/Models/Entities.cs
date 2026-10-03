@@ -45,6 +45,8 @@ public class User
     public Employee? Employee { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastSignedIn { get; set; }
+    public bool Active { get; set; } = true;
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
 }
 
 public class Tenant
