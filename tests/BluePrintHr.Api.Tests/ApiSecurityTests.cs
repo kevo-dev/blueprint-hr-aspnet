@@ -36,7 +36,7 @@ public class ApiSecurityTests : IClassFixture<ApiFactory>
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
         {
-            Content = new StringContent("{"email":"x@example.com","password":"bad"}", System.Text.Encoding.UTF8, "application/json")
+            Content = new StringContent("{\"email\":\"x@example.com\",\"password\":\"bad\"}", System.Text.Encoding.UTF8, "application/json")
         };
         request.Headers.TryAddWithoutValidation("Origin", "https://evil.example");
         var response = await client.SendAsync(request);
