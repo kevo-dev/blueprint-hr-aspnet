@@ -24,6 +24,28 @@ public static class DbInitializer
 
         if (!configuration.GetValue<bool>("Database:SeedDemoData")) return;
 
+        // Optional one-time production bootstrap: replace the password of the
+        // configured admin account. This is deliberately server-side and only
+        // runs when explicitly enabled through configuration.
+        if (configuration.GetValue<bool>("Bootstrap:ResetAdminPassword"))
+        {
+            var bootstrapEmail = configuration["Seed:AdminEmail"]?.Trim().ToLowerInvariant();
+            var bootstrapPassword = configuration["Seed:AdminPassword"];
+
+            if (string.IsNullOrWhiteSpace(bootstrapEmail) || string.IsNullOrWhiteSpace(bootstrapPassword))
+                throw new InvalidOperationException("Seed:AdminEmail and Seed:AdminPassword are required when Bootstrap:ResetAdminPassword is enabled.");
+
+            var bootstrapUser = await db.Users.SingleOrDefaultAsync(x => x.Email.ToLower() == bootstrapEmail);
+            if (bootstrapUser is null)
+                throw new InvalidOperationException($"Bootstrap admin user '{bootstrapEmail}' was not found.");
+
+            if (bootstrapUser.Role is not UserRole.SuperAdmin and not UserRole.CompanyAdmin)
+                throw new InvalidOperationException("Bootstrap password reset is only permitted for an administrator account.");
+
+            bootstrapUser.PasswordHash = passwordService.Hash(bootstrapPassword);
+            await db.SaveChangesAsync();
+        }
+
         // The first bootstrap attempt can fail after creating the tenant but before
         // creating users. Recover that partial seed on the next startup so the
         // administrator bootstrap can complete cleanly.
