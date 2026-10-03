@@ -66,6 +66,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CanManagePayroll", policy => policy.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.CompanyAdmin), nameof(UserRole.PayrollManager)));
     options.AddPolicy("CanApprove", policy => policy.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.CompanyAdmin), nameof(UserRole.HrManager), nameof(UserRole.PayrollManager)));
     options.AddPolicy("CanViewAudit", policy => policy.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.CompanyAdmin), nameof(UserRole.HrManager)));
+    options.AddPolicy("CanViewReports", policy => policy.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.CompanyAdmin), nameof(UserRole.HrManager), nameof(UserRole.PayrollManager)));
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
