@@ -20,8 +20,8 @@ public class AuthController(BluePrintHrDbContext db, IPasswordService passwords)
     public async Task<ActionResult<UserDto>> Login(LoginRequest request)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
-        var user = await db.Users.Include(x => x.Employee).SingleOrDefaultAsync(x => x.Email.ToLower() == normalizedEmail);
-        if (user is null || !passwords.Verify(request.Password, user.PasswordHash))
+        var user = await db.Users.Include(x => x.Employee).Include(x => x.Tenant).SingleOrDefaultAsync(x => x.Email.ToLower() == normalizedEmail);
+        if (user is null || !user.Active || user.Tenant.Status == TenantStatus.Suspended || !passwords.Verify(request.Password, user.PasswordHash))
             return Unauthorized(new { message = "Invalid email or password." });
 
         user.LastSignedIn = DateTime.UtcNow;
@@ -55,7 +55,8 @@ public class AuthController(BluePrintHrDbContext db, IPasswordService passwords)
             new(ClaimTypes.Name, user.Name),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.Role.ToString()),
-            new("tenant_id", user.TenantId.ToString())
+            new("tenant_id", user.TenantId.ToString()),
+            new("security_stamp", user.SecurityStamp)
         };
         if (user.EmployeeId.HasValue) claims.Add(new Claim("employee_id", user.EmployeeId.Value.ToString()));
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
