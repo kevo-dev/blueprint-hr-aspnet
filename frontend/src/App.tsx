@@ -33,7 +33,9 @@ function App() {
   const [essProfile, setEssProfile] = useState<Employee | null>(null)
   const [payslips, setPayslips] = useState<PayrollTransaction[]>([])
   const [audit, setAudit] = useState<AuditLog[]>([])
-  const [reports, setReports] = useState<Report[]>([])\n  const [attendance, setAttendance] = useState<Attendance[]>([])\n  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null)
+  const [reports, setReports] = useState<Report[]>([])
+  const [attendance, setAttendance] = useState<Attendance[]>([])
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null)
   const [employeeForm, setEmployeeForm] = useState<Record<string, string>>({ employeeNo: '', firstName: '', lastName: '', kraPin: '', basicSalary: '85000', email: '', phone: '', nssfNo: '', shifNo: '', bankName: '', accountNumber: '' })
   const [branchForm, setBranchForm] = useState<Record<string, string>>({ name: '', code: '', location: '' })
   const [departmentForm, setDepartmentForm] = useState<Record<string, string>>({ name: '', code: '', branchId: '' })
@@ -191,7 +193,8 @@ function App() {
           {activeTab === 'organization' && <OrganizationView organization={organization} branchForm={branchForm} setBranchForm={setBranchForm} departmentForm={departmentForm} setDepartmentForm={setDepartmentForm} createBranch={createBranch} createDepartment={createDepartment} canManage={canManagePeople(user.role)} />}
           {activeTab === 'payroll' && <PayrollView periods={periods} selectedPeriodId={selectedPeriodId} setSelectedPeriodId={setSelectedPeriodId} transactions={transactions} form={payrollForm} setForm={setPayrollForm} onProcess={processPayroll} canManage={canManagePayroll(user.role)} />}
           {activeTab === 'leave' && <LeaveView leaveTypes={leaveTypes} balances={leaveBalances} requests={leaveRequests} form={leaveForm} setForm={setLeaveForm} onCreate={createLeave} onUpdate={updateLeaveStatus} canApprove={canApprove(user.role)} />}
-          {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} />}\n          {activeTab === 'attendance' && <AttendanceView employees={employees} rows={attendance} summary={attendanceSummary} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
+          {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} />}
+          {activeTab === 'attendance' && <AttendanceView employees={employees} rows={attendance} summary={attendanceSummary} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
           {activeTab === 'audit' && <AuditView rows={audit} />}
           {activeTab === 'reports' && <ReportsView reports={reports} />}
         </div>
@@ -201,7 +204,7 @@ function App() {
 }
 
 function LoginScreen({ email, password, busy, setEmail, setPassword, onSubmit, notice }: { email: string; password: string; busy: boolean; setEmail: (value: string) => void; setPassword: (value: string) => void; onSubmit: (event: FormEvent) => void; notice: { type: 'success' | 'error'; text: string } | null }) {
-  return <div className="login-page"><div className="login-visual"><div className="brand-mark large">BP</div><span className="eyebrow">BLUEPRINT HR</span><h1>People operations, brought into focus.</h1><p>A Kenya-focused HR and payroll foundation for modern teams — structured, compliant, and ready to scale.</p><div className="feature-list"><span>Multi-tenant architecture with strict isolation</span><span>Employee master with Kenya statutory identifiers</span><span>Role-aware workflows and audit visibility</span></div></div><div className="login-card"><span className="eyebrow">SECURE WORKSPACE ACCESS</span><h2>Sign in to your workspace</h2><p className="muted">Use your BluePrint HR account credentials to continue.</p>{notice && <div className={`notice ${notice.type}`}>{notice.text}</div>}<form onSubmit={onSubmit} className="stack-form"><label>Work email<input value={email} onChange={event => setEmail(event.target.value)} type="email" required /></label><label>Password<input value={password} onChange={event => setPassword(event.target.value)} type="password" required minLength={8} /></label><button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in securely'}</button></form><div className="credential-note"><strong>Seeded administrator</strong><span>admin@blueprinthr.co.ke</span><span>BluePrint!2026</span></div><p className="fine-print">Signed server-side sessions · SQL Server-ready HR foundation</p></div></div>
+  return <div className="login-page"><div className="login-visual"><div className="brand-mark large">BP</div><span className="eyebrow">BLUEPRINT HR</span><h1>People operations, brought into focus.</h1><p>A Kenya-focused HR and payroll foundation for modern teams — structured, compliant, and ready to scale.</p><div className="feature-list"><span>Multi-tenant architecture with strict isolation</span><span>Employee master with Kenya statutory identifiers</span><span>Role-aware workflows and audit visibility</span></div></div><div className="login-card"><span className="eyebrow">SECURE WORKSPACE ACCESS</span><h2>Sign in to your workspace</h2><p className="muted">Use your BluePrint HR account credentials to continue.</p>{notice && <div className={`notice ${notice.type}`}>{notice.text}</div>}<form onSubmit={onSubmit} className="stack-form"><label>Work email<input value={email} onChange={event => setEmail(event.target.value)} type="email" required /></label><label>Password<input value={password} onChange={event => setPassword(event.target.value)} type="password" required minLength={8} /></label><button className="primary-button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in securely'}</button></form><p className="fine-print">Signed server-side sessions · SQL Server-ready HR foundation</p></div></div>
 }
 
 function DashboardView({ dashboard, employees, transactions, openRequests, onNavigate }: { dashboard: Dashboard | null; employees: Employee[]; transactions: PayrollTransaction[]; openRequests: number; onNavigate: (tab: Tab) => void }) {
@@ -271,7 +274,8 @@ function ReportsView({ reports }: { reports: Report[] }) {
   const downloadCsv = () => {
     if (!selected) return
     const escape = (value: string) => '"' + value.replaceAll('"', '""') + '"'
-    const csv = [selected.columns, ...selected.rows].map(row => row.map(escape).join(',')).join('\\n')
+    const csv = [selected.columns, ...selected.rows].map(row => row.map(escape).join(',')).join('\
+')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
