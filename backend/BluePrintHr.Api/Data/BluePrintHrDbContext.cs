@@ -23,6 +23,7 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ReportDefinition> ReportDefinitions => Set<ReportDefinition>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +47,14 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
         modelBuilder.Entity<AuditLog>().ToTable("audit_logs");
         modelBuilder.Entity<ReportDefinition>().ToTable("report_definitions");
         modelBuilder.Entity<AttendanceRecord>().ToTable("attendance_records");
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.ToTable("password_reset_tokens");
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.ExpiresAt });
+            entity.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<User>(entity =>
         {
