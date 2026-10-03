@@ -19,6 +19,8 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
     public DbSet<LeaveBalance> LeaveBalances => Set<LeaveBalance>();
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<EmployeePayrollComponent> EmployeePayrollComponents => Set<EmployeePayrollComponent>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ReportDefinition> ReportDefinitions => Set<ReportDefinition>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
@@ -106,6 +108,20 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
         {
             entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
             entity.Property(x => x.DaysRequested).HasPrecision(9, 2);
+        });
+
+        modelBuilder.Entity<EmployeePayrollComponent>(entity =>
+        {
+            entity.ToTable("employee_payroll_components");
+            entity.Property(x => x.Amount).HasPrecision(18, 2);
+            entity.Property(x => x.ComponentType).HasMaxLength(32);
+            entity.HasIndex(x => new { x.TenantId, x.EmployeeId, x.Active });
+            entity.HasOne(x => x.Employee).WithMany().HasForeignKey(x => x.EmployeeId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notifications");
+            entity.HasIndex(x => new { x.TenantId, x.UserId, x.IsRead, x.CreatedAt });
         });
 
         modelBuilder.Entity<AuditLog>().HasIndex(x => new { x.TenantId, x.CreatedAt });
