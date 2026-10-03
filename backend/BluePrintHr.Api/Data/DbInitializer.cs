@@ -73,7 +73,7 @@ public static class DbInitializer
             DepartmentId = department.Id,
             DesignationId = designation.Id,
             EmploymentTypeId = employmentType.Id,
-            EmploymentDate = new DateTime(2023, 1, 9),
+            EmploymentDate = new DateTime(2023, 1, 9, 0, 0, 0, DateTimeKind.Utc),
             BasicSalary = 85_000m,
             BankName = "KCB Bank",
             BankBranch = "Westlands",
