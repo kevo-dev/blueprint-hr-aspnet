@@ -356,8 +356,14 @@ function PayrollView({ periods, selectedPeriodId, setSelectedPeriodId, transacti
   const [employeeId, setEmployeeId] = useState('')
   const [components, setComponents] = useState<import('./api').PayrollComponent[]>([])
   const [component, setComponent] = useState({ id: 0, name: '', componentType: 'Allowance', amount: '0', taxable: true, recurring: true })
+  const [periodForm, setPeriodForm] = useState({ month: String(new Date().getMonth() + 1), year: String(new Date().getFullYear()) })
   const totals = transactions.reduce((acc, row) => ({ gross: acc.gross + row.grossPay, paye: acc.paye + row.paye, nssf: acc.nssf + row.nssf, shif: acc.shif + row.shif, levy: acc.levy + row.housingLevy, net: acc.net + row.netPay }), { gross: 0, paye: 0, nssf: 0, shif: 0, levy: 0, net: 0 })
 
+  const createPeriod = async (e: FormEvent) => {
+    e.preventDefault()
+    try { await api.createPayrollPeriod({ month: Number(periodForm.month), year: Number(periodForm.year) }); setPeriodForm({ month: String(new Date().getMonth() + 1), year: String(new Date().getFullYear()) }); window.location.reload() }
+    catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not create payroll period.') }
+  }
   const loadComponents = async (id: number) => {
     try { setComponents(await api.payrollComponents(id)) } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not load payroll components.') }
   }
@@ -376,6 +382,7 @@ function PayrollView({ periods, selectedPeriodId, setSelectedPeriodId, transacti
     <Panel title="Kenyan payroll engine" eyebrow="STATUTORY PROCESSING" action={canManage && <div className="action-row"><button className="primary-button" onClick={onProcess} disabled={!selectedPeriodId}>Process period</button><button className="secondary-button" onClick={onLock} disabled={periods.find(x=>x.id===selectedPeriodId)?.status !== 'Approved'}>Lock period</button></div>}>
       <div className="toolbar"><label>Payroll period<select value={selectedPeriodId} onChange={event => setSelectedPeriodId(Number(event.target.value))}>{periods.map(period => <option key={period.id} value={period.id}>{period.name} · {period.status}</option>)}</select></label><Field label="Global allowances (KES)" value={form.allowances} onChange={value => setForm({ ...form, allowances: value })} type="number" /><Field label="Global deductions (KES)" value={form.otherDeductions} onChange={value => setForm({ ...form, otherDeductions: value })} type="number" /></div>
       <div className="compliance-strip"><strong>Calculation coverage</strong><span>PAYE</span><span>NSSF</span><span>SHIF</span><span>Housing Levy</span><span>Employee components</span><span>Lockable periods</span></div>
+      {canManage && <form className="toolbar" onSubmit={createPeriod}><Field label="New period month" value={periodForm.month} onChange={v=>setPeriodForm({...periodForm,month:v})} type="number"/><Field label="Year" value={periodForm.year} onChange={v=>setPeriodForm({...periodForm,year:v})} type="number"/><button className="secondary-button">Create payroll period</button></form>}
     </Panel>
     {canManage && <Panel title="Employee payroll components" eyebrow="ALLOWANCES & DEDUCTIONS">
       <div className="form-grid two"><label>Employee<select value={employeeId} onChange={e=>{setEmployeeId(e.target.value); if(e.target.value) loadComponents(Number(e.target.value))}}><option value="">Select employee</option>{employees.map(x=><option key={x.id} value={x.id}>{x.employeeNo} — {x.fullName}</option>)}</select></label><div className="muted">Recurring components are included automatically when payroll is processed.</div></div>
