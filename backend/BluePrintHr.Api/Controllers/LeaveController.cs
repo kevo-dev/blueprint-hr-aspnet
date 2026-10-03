@@ -88,6 +88,16 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context) :
         if (!employeeExists || leaveType is null)
             return BadRequest(new { message = "Employee or leave type is outside the current tenant." });
 
+        var overlaps = await db.LeaveRequests.AnyAsync(x =>
+            x.TenantId == context.TenantId &&
+            x.EmployeeId == employeeId.Value &&
+            x.Status is LeaveRequestStatus.Pending or LeaveRequestStatus.Approved &&
+            x.StartDate <= request.EndDate.Date &&
+            x.EndDate >= request.StartDate.Date);
+
+        if (overlaps)
+            return Conflict(new { message = "The requested dates overlap an existing pending or approved leave request." });
+
         var leave = new LeaveRequest
         {
             TenantId = context.TenantId,
