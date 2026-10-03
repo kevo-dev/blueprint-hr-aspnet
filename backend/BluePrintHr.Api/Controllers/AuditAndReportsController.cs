@@ -22,7 +22,7 @@ public class AuditController(BluePrintHrDbContext db, IRequestContext context) :
 
 [ApiController]
 [Route("api/reports")]
-[Authorize]
+[Authorize(Policy = "CanViewReports")]
 public class ReportsController(BluePrintHrDbContext db, IConfiguration configuration, IRequestContext context) : ControllerBase
 {
     [HttpGet]
@@ -38,6 +38,9 @@ public class ReportsController(BluePrintHrDbContext db, IConfiguration configura
     {
         var report = await db.ReportDefinitions.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id && x.Enabled);
         if (report is null) return NotFound(new { message = "Report not found." });
+
+        if (string.Equals(report.Name, "Payroll Summary", StringComparison.OrdinalIgnoreCase) && !context.CanManagePayroll)
+            return Forbid();
 
         var employees = await db.Employees.AsNoTracking().Where(x => x.TenantId == context.TenantId).OrderBy(x => x.EmployeeNo).ToListAsync();
         var employeeMap = employees.ToDictionary(x => x.Id);
