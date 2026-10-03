@@ -128,5 +128,5 @@ public class EmployeesController(BluePrintHrDbContext db, IRequestContext contex
         await db.SaveChangesAsync();
     }
 
-    private static EmployeeDto ToDto(Employee x) => new(x.Id, x.EmployeeNo, x.PayrollNo, string.Join(' ', new[] { x.FirstName, x.MiddleName, x.LastName }.Where(s => !string.IsNullOrWhiteSpace(s))), x.Email, x.Phone, x.KraPin, x.NssfNo, x.ShifNo, x.EmploymentStatus, x.BasicSalary, x.BankName, x.AccountNumber, x.DepartmentId, x.BranchId);
+    private static EmployeeDto ToDto(Employee x) => new(x.Id, x.EmployeeNo, x.PayrollNo, string.Join(' ', new[] { x.FirstName, x.MiddleName, x.LastName }.Where(s => !string.IsNullOrWhiteSpace(s))), x.FirstName, x.MiddleName, x.LastName, x.Email, x.Phone, x.KraPin, x.NssfNo, x.ShifNo, x.EmploymentStatus, x.BasicSalary, x.BankName, x.BankBranch, x.AccountNumber, x.DepartmentId, x.BranchId, x.DesignationId, x.GradeId, x.EmploymentTypeId, x.EmploymentDate, x.TerminationDate);
 }
