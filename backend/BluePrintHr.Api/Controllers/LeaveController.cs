@@ -12,7 +12,7 @@ namespace BluePrintHr.Api.Controllers;
 [ApiController]
 [Route("api/leave")]
 [Authorize]
-public class LeaveController(BluePrintHrDbContext db, IRequestContext context) : ControllerBase
+public class LeaveController(BluePrintHrDbContext db, IRequestContext context, INotificationService notifications) : ControllerBase
 {
     [HttpGet("types")]
     public async Task<ActionResult<IReadOnlyList<LeaveTypeDto>>> Types()
@@ -172,6 +172,12 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context) :
             Details = $"Submitted {request.DaysRequested} days."
         });
 
+        var approverIds = await db.Users.AsNoTracking()
+            .Where(x => x.TenantId == context.TenantId &&
+                (x.Role == UserRole.SuperAdmin || x.Role == UserRole.CompanyAdmin || x.Role == UserRole.HrManager || x.Role == UserRole.PayrollManager))
+            .Select(x => x.Id).ToListAsync();
+        foreach (var approverId in approverIds)
+            await notifications.NotifyUserAsync(approverId, "Leave", "New leave request", $"A new leave request for {request.DaysRequested:0.##} days is awaiting review.", "LeaveRequest", leave.Id);
         await db.SaveChangesAsync();
 
         return Ok(new LeaveRequestDto(
@@ -271,6 +277,8 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context) :
             Details = $"Status changed to {request.Status}."
         });
 
+        await db.SaveChangesAsync();
+        await notifications.NotifyEmployeeAsync(context.TenantId, leave.EmployeeId, "Leave", $"Leave request {request.Status}", $"Your leave request has been {request.Status.ToString().ToLowerInvariant()}.", "LeaveRequest", leave.Id);
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
 
