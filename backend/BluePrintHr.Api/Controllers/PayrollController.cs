@@ -11,7 +11,7 @@ namespace BluePrintHr.Api.Controllers;
 [ApiController]
 [Route("api/payroll")]
 [Authorize]
-public class PayrollController(BluePrintHrDbContext db, IRequestContext context, IPayrollCalculator calculator) : ControllerBase
+public class PayrollController(BluePrintHrDbContext db, IRequestContext context, IPayrollCalculator calculator, INotificationService notifications) : ControllerBase
 {
     [HttpGet("periods")]
     public async Task<ActionResult<IReadOnlyList<PayrollPeriodDto>>> Periods()
@@ -94,6 +94,8 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
         period.Status = PayrollStatus.Approved;
         period.ProcessedAt = DateTime.UtcNow;
         db.AuditLogs.Add(new AuditLog { TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name, Action = "PROCESS", EntityType = "PayrollPeriod", EntityId = period.Id, Details = $"Processed {transactions.Count} employee transactions." });
+        foreach (var employee in employees)
+            await notifications.NotifyEmployeeAsync(context.TenantId, employee.Id, "Payroll", "Payroll processed", $"Your payroll for {period.Name} has been processed. Net pay: KES {transactions.Single(x => x.EmployeeId == employee.Id).NetPay:N2}.", "PayrollPeriod", period.Id);
         await db.SaveChangesAsync();
         return Ok(transactions.Select(x => ToDto(x, employees.Single(e => e.Id == x.EmployeeId))).ToList());
     }
