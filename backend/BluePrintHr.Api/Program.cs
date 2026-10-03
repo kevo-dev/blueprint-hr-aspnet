@@ -14,15 +14,26 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var useInMemory = builder.Configuration.GetValue<bool>("Database:UseInMemory") || string.IsNullOrWhiteSpace(connectionString);
+var useInMemory = builder.Configuration.GetValue<bool>("Database:UseInMemory");
+
 if (useInMemory)
-    builder.Services.AddDbContext<BluePrintHrDbContext>(options => options.UseInMemoryDatabase("BluePrintHrDevelopment"));
+{
+    builder.Services.AddDbContext<BluePrintHrDbContext>(options =>
+        options.UseInMemoryDatabase("BluePrintHrDevelopment"));
+}
 else
-    builder.Services.AddDbContext<BluePrintHrDbContext>(options => options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5)));
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+        throw new InvalidOperationException("Database:DefaultConnection is required when Database:UseInMemory is false.");
+
+    builder.Services.AddDbContext<BluePrintHrDbContext>(options =>
+        options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(5)));
+}
 
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
 builder.Services.AddScoped<IPayrollCalculator, KenyaPayrollCalculator>();
+
 var configuredSameSite = builder.Configuration["Auth:CookieSameSite"];
 var cookieSameSite = Enum.TryParse<SameSiteMode>(configuredSameSite, ignoreCase: true, out var parsedSameSite)
     ? parsedSameSite
@@ -58,19 +69,23 @@ builder.Services.AddAuthorization(options =>
 });
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
-builder.Services.AddCors(options => options.AddPolicy("frontend", policy => policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+builder.Services.AddCors(options => options.AddPolicy("frontend", policy =>
+    policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 var app = builder.Build();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseCors("frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "BluePrintHr.Api" }));
 app.MapControllers();
+
 await DbInitializer.InitializeAsync(app.Services, app.Configuration);
 app.Run();
 
