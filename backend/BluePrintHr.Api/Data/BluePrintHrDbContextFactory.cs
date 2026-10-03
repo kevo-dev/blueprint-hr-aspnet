@@ -22,7 +22,7 @@ public sealed class BluePrintHrDbContextFactory : IDesignTimeDbContextFactory<Bl
             throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured before running EF Core migrations.");
 
         var options = new DbContextOptionsBuilder<BluePrintHrDbContext>()
-            .UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5))
+            .UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(5))
             .Options;
 
         return new BluePrintHrDbContext(options);
