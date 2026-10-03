@@ -33,7 +33,7 @@ export type LeaveType = { id: number; name: string; defaultDays: number; paid: b
 export type LeaveBalance = { id: number; employeeId: number; leaveTypeId: number; leaveType: string; year: number; allocatedDays: number; usedDays: number; availableDays: number }
 export type LeaveRequest = { id: number; employeeId: number; employeeName: string; leaveTypeId: number; leaveType: string; startDate: string; endDate: string; daysRequested: number; reason?: string; status: string; createdAt: string }
 export type AuditLog = { id: number; action: string; entityType: string; entityId?: number; userName?: string; details?: string; createdAt: string }
-export type Report = { id: number; name: string; description: string; reportPath: string; launchUrl?: string }
+export type Report = { id: number; name: string; description: string; reportPath: string; launchUrl?: string }\nexport type ReportData = { name: string; description: string; columns: string[]; rows: string[][]; generatedAt: string }
 
 const json = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.stringify(body) })
 
@@ -58,5 +58,5 @@ export const api = {
   essProfile: () => request<Employee | null>('/api/ess/profile'),
   payslips: () => request<PayrollTransaction[]>('/api/ess/payslips'),
   audit: () => request<AuditLog[]>('/api/audit'),
-  reports: () => request<Report[]>('/api/reports'),
+  reports: () => request<Report[]>('/api/reports'),\n  reportData: (id: number) => request<ReportData>(`/api/reports/${id}/data`),
 }
