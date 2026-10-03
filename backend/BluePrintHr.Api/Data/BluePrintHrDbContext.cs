@@ -20,6 +20,7 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ReportDefinition> ReportDefinitions => Set<ReportDefinition>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +43,7 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
         modelBuilder.Entity<LeaveRequest>().ToTable("leave_requests");
         modelBuilder.Entity<AuditLog>().ToTable("audit_logs");
         modelBuilder.Entity<ReportDefinition>().ToTable("report_definitions");
+        modelBuilder.Entity<AttendanceRecord>().ToTable("attendance_records");
 
         modelBuilder.Entity<User>(entity =>
         {
@@ -108,5 +110,11 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
 
         modelBuilder.Entity<AuditLog>().HasIndex(x => new { x.TenantId, x.CreatedAt });
         modelBuilder.Entity<ReportDefinition>().HasIndex(x => x.Name).IsUnique();
+        modelBuilder.Entity<AttendanceRecord>(entity =>
+        {
+            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            entity.Property(x => x.HoursWorked).HasPrecision(5, 2);
+            entity.HasIndex(x => new { x.TenantId, x.EmployeeId, x.AttendanceDate }).IsUnique();
+        });
     }
 }
