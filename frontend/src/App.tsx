@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { api } from './api'
-import type { Attendance, AttendanceSummary, AuditLog, Dashboard, Employee, LeaveBalance, LeaveRequest, LeaveType, Organization, PayrollPeriod, PayrollTransaction, Report, ReportData, User } from './api'
+import type { Attendance, AttendanceSummary, AuditLog, Dashboard, Employee, LeaveBalance, LeaveRequest, LeaveType, Organization, PayrollPeriod, PayrollTransaction, Report, ReportData, User, Notification } from './api'
 import './App.css'
 
 type Tab = 'dashboard' | 'employees' | 'organization' | 'payroll' | 'leave' | 'ess' | 'attendance' | 'audit' | 'reports'
@@ -36,6 +36,8 @@ function App() {
   const [reports, setReports] = useState<Report[]>([])
   const [attendance, setAttendance] = useState<Attendance[]>([])
   const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
   const [employeeForm, setEmployeeForm] = useState<Record<string, string>>({ employeeNo: '', firstName: '', lastName: '', kraPin: '', basicSalary: '85000', email: '', phone: '', nssfNo: '', shifNo: '', bankName: '', accountNumber: '' })
   const [branchForm, setBranchForm] = useState<Record<string, string>>({ name: '', code: '', location: '' })
   const [departmentForm, setDepartmentForm] = useState<Record<string, string>>({ name: '', code: '', branchId: '' })
@@ -73,6 +75,7 @@ function App() {
       load('Reports', api.reports, setReports),
       load('Attendance', api.attendance, setAttendance),
       load('Attendance summary', api.attendanceSummary, setAttendanceSummary),
+      load('Notifications', api.notifications, setNotifications),
       ...(canViewAudit(activeUser.role) ? [load('Audit', api.audit, setAudit)] : []),
     ])
 
@@ -153,8 +156,19 @@ function App() {
   }
 
   const processPayroll = async () => {
-    try { await api.processPayroll({ payrollPeriodId: selectedPeriodId, allowances: Number(payrollForm.allowances), otherDeductions: Number(payrollForm.otherDeductions) }); await refresh(); showNotice('success', 'Payroll processed with PAYE, NSSF, SHIF, and Housing Levy calculations.') } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not process payroll.') }
+    try { await api.processPayroll({ payrollPeriodId: selectedPeriodId, allowances: Number(payrollForm.allowances), otherDeductions: Number(payrollForm.otherDeductions) }); await refresh(); showNotice('success', 'Payroll processed with employee components and Kenyan statutory calculations.') } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not process payroll.') }
   }
+  const lockPayroll = async () => {
+    try { await api.lockPayrollPeriod(selectedPeriodId); await refresh(); showNotice('success', 'Payroll period locked. Further processing is blocked.') } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not lock payroll period.') }
+  }
+  const downloadPayslip = async (id: number) => {
+    try {
+      const blob = await api.downloadPayslip(id)
+      const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `payslip-${id}.pdf`; link.click(); URL.revokeObjectURL(url)
+    } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not download payslip.') }
+  }
+  const markNotificationRead = async (id: number) => { try { await api.markNotificationRead(id); setNotifications(rows => rows.map(x => x.id === id ? { ...x, isRead: true } : x)) } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not update notification.') } }
+  const markAllNotificationsRead = async () => { try { await api.markAllNotificationsRead(); setNotifications(rows => rows.map(x => ({ ...x, isRead: true }))) } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not update notifications.') } }
 
   const createLeave = async (event: FormEvent) => {
     event.preventDefault()
@@ -185,15 +199,15 @@ function App() {
         <div className="sidebar-footer"><div className="online-dot" /> <span>API connected</span><span className="version">v1.0</span></div>
       </aside>
       <main className="main-area">
-        <header className="topbar"><div><span className="eyebrow">{activeTab === 'dashboard' ? 'OPERATIONS CONTROL CENTER' : navItems.find(item => item.id === activeTab)?.label.toUpperCase()}</span><h1>{activeTab === 'dashboard' ? 'People operations, brought into focus.' : navItems.find(item => item.id === activeTab)?.label}</h1></div><div className="user-menu"><div className="avatar">{user.name.split(' ').map(part => part[0]).slice(0, 2).join('')}</div><div><strong>{user.name}</strong><span>{user.role}</span></div><button className="ghost-button" onClick={onLogout}>Sign out</button></div></header>
+        <header className="topbar"><div><span className="eyebrow">{activeTab === 'dashboard' ? 'OPERATIONS CONTROL CENTER' : navItems.find(item => item.id === activeTab)?.label.toUpperCase()}</span><h1>{activeTab === 'dashboard' ? 'People operations, brought into focus.' : navItems.find(item => item.id === activeTab)?.label}</h1></div><div className="user-menu"><button className="ghost-button" onClick={() => setShowNotifications(value => !value)}>Notifications {notifications.filter(x => !x.isRead).length ? `(${notifications.filter(x => !x.isRead).length})` : ''}</button>{showNotifications && <div className="notification-popover"><div className="panel-heading"><strong>Notifications</strong><button className="text-button" onClick={markAllNotificationsRead}>Mark all read</button></div>{notifications.length === 0 ? <EmptyState text="No notifications." /> : notifications.slice(0,8).map(item => <button className={item.isRead ? 'notification-item read' : 'notification-item'} key={item.id} onClick={() => markNotificationRead(item.id)}><strong>{item.title}</strong><span>{item.message}</span><small>{formatDate(item.createdAt)}</small></button>)}</div>}<div className="avatar">{user.name.split(' ').map(part => part[0]).slice(0, 2).join('')}</div><div><strong>{user.name}</strong><span>{user.role}</span></div><button className="ghost-button" onClick={onLogout}>Sign out</button></div></header>
         {notice && <div className={`notice ${notice.type}`}>{notice.text}</div>}
         <div className="content">
           {activeTab === 'dashboard' && <DashboardView dashboard={dashboard} employees={employees} transactions={transactions} openRequests={openRequests} onNavigate={setActiveTab} />}
           {activeTab === 'employees' && <EmployeesView employees={employees} organization={organization} form={employeeForm} setForm={setEmployeeForm} onSubmit={createEmployee} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
           {activeTab === 'organization' && <OrganizationView organization={organization} branchForm={branchForm} setBranchForm={setBranchForm} departmentForm={departmentForm} setDepartmentForm={setDepartmentForm} createBranch={createBranch} createDepartment={createDepartment} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
-          {activeTab === 'payroll' && <PayrollView periods={periods} selectedPeriodId={selectedPeriodId} setSelectedPeriodId={setSelectedPeriodId} transactions={transactions} form={payrollForm} setForm={setPayrollForm} onProcess={processPayroll} canManage={canManagePayroll(user.role)} />}
+          {activeTab === 'payroll' && <PayrollView periods={periods} selectedPeriodId={selectedPeriodId} setSelectedPeriodId={setSelectedPeriodId} transactions={transactions} employees={employees} form={payrollForm} setForm={setPayrollForm} onProcess={processPayroll} onLock={lockPayroll} canManage={canManagePayroll(user.role)} showNotice={showNotice} onDownloadPayslip={downloadPayslip} />}
           {activeTab === 'leave' && <LeaveView leaveTypes={leaveTypes} balances={leaveBalances} requests={leaveRequests} form={leaveForm} setForm={setLeaveForm} onCreate={createLeave} onUpdate={updateLeaveStatus} canApprove={canApprove(user.role)} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
-          {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} />}
+          {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} onDownloadPayslip={downloadPayslip} />}
           {activeTab === 'attendance' && <AttendanceView employees={employees} rows={attendance} summary={attendanceSummary} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
           {activeTab === 'audit' && <AuditView rows={audit} />}
           {activeTab === 'reports' && <ReportsView reports={reports} />}
