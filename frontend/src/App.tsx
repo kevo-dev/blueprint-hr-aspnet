@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { api } from './api'
-import type { AuditLog, Dashboard, Employee, LeaveBalance, LeaveRequest, LeaveType, Organization, PayrollPeriod, PayrollTransaction, Report, ReportData, User } from './api'
+import type { Attendance, AttendanceSummary, AuditLog, Dashboard, Employee, LeaveBalance, LeaveRequest, LeaveType, Organization, PayrollPeriod, PayrollTransaction, Report, ReportData, User } from './api'
 import './App.css'
 
-type Tab = 'dashboard' | 'employees' | 'organization' | 'payroll' | 'leave' | 'ess' | 'audit' | 'reports'
+type Tab = 'dashboard' | 'employees' | 'organization' | 'payroll' | 'leave' | 'ess' | 'attendance' | 'audit' | 'reports'
 
 const formatMoney = (value: number) => `KES ${Number(value || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const formatDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
@@ -33,7 +33,7 @@ function App() {
   const [essProfile, setEssProfile] = useState<Employee | null>(null)
   const [payslips, setPayslips] = useState<PayrollTransaction[]>([])
   const [audit, setAudit] = useState<AuditLog[]>([])
-  const [reports, setReports] = useState<Report[]>([])
+  const [reports, setReports] = useState<Report[]>([])\n  const [attendance, setAttendance] = useState<Attendance[]>([])\n  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null)
   const [employeeForm, setEmployeeForm] = useState<Record<string, string>>({ employeeNo: '', firstName: '', lastName: '', kraPin: '', basicSalary: '85000', email: '', phone: '', nssfNo: '', shifNo: '', bankName: '', accountNumber: '' })
   const [branchForm, setBranchForm] = useState<Record<string, string>>({ name: '', code: '', location: '' })
   const [departmentForm, setDepartmentForm] = useState<Record<string, string>>({ name: '', code: '', branchId: '' })
@@ -47,8 +47,8 @@ function App() {
 
   const loadData = async (activeUser: User) => {
     try {
-      const [dash, employeeRows, org, periodRows, types, balances, requests, profile, payslipRows, reportRows] = await Promise.all([
-        api.dashboard(), api.employees(), api.organization(), api.periods(), api.leaveTypes(), api.leaveBalances(), api.leaveRequests(), api.essProfile(), api.payslips(), api.reports(),
+      const [dash, employeeRows, org, periodRows, types, balances, requests, profile, payslipRows, reportRows, attendanceRows, attendanceStats] = await Promise.all([
+        api.dashboard(), api.employees(), api.organization(), api.periods(), api.leaveTypes(), api.leaveBalances(), api.leaveRequests(), api.essProfile(), api.payslips(), api.reports(), api.attendance(), api.attendanceSummary(),
       ])
       setDashboard(dash)
       setEmployees(employeeRows)
@@ -60,7 +60,7 @@ function App() {
       setLeaveRequests(requests)
       setEssProfile(profile)
       setPayslips(payslipRows)
-      setReports(reportRows)
+      setReports(reportRows)\n      setAttendance(attendanceRows)\n      setAttendanceSummary(attendanceStats)
       if (periodRows[0]) setTransactions(await api.transactions(periodRows[0].id))
       if (canViewAudit(activeUser.role)) setAudit(await api.audit())
     } catch (error) {
@@ -83,7 +83,7 @@ function App() {
   const navItems = useMemo(() => {
     const base: { id: Tab; label: string; hint: string }[] = [{ id: 'dashboard', label: 'Dashboard', hint: 'Overview' }, { id: 'leave', label: 'Leave', hint: 'Requests and balances' }, { id: 'ess', label: 'ESS portal', hint: 'Your employee records' }, { id: 'reports', label: 'Reports', hint: 'SSRS catalog' }]
     if (!user || !canManagePeople(user.role)) return base
-    return [{ id: 'dashboard', label: 'Dashboard', hint: 'Overview' }, { id: 'employees', label: 'Employee master', hint: 'People records' }, { id: 'organization', label: 'Organization', hint: 'Structure and units' }, { id: 'payroll', label: 'Kenyan payroll', hint: 'Statutory processing' }, { id: 'leave', label: 'Leave', hint: 'Requests and balances' }, { id: 'ess', label: 'ESS portal', hint: 'Self-service' }, ...(canViewAudit(user.role) ? [{ id: 'audit' as Tab, label: 'Audit trail', hint: 'Change history' }] : []), { id: 'reports', label: 'Reports', hint: 'SSRS catalog' }]
+    return [{ id: 'dashboard', label: 'Dashboard', hint: 'Overview' }, { id: 'employees', label: 'Employee master', hint: 'People records' }, { id: 'organization', label: 'Organization', hint: 'Structure and units' }, { id: 'payroll', label: 'Kenyan payroll', hint: 'Statutory processing' }, { id: 'leave', label: 'Leave', hint: 'Requests and balances' }, { id: 'ess', label: 'ESS portal', hint: 'Self-service' }, { id: 'attendance', label: 'Attendance', hint: 'Time and attendance' }, ...(canViewAudit(user.role) ? [{ id: 'audit' as Tab, label: 'Audit trail', hint: 'Change history' }] : []), { id: 'reports', label: 'Reports', hint: 'SSRS catalog' }]
   }, [user])
 
   const onLogin = async (event: FormEvent) => {
@@ -171,7 +171,7 @@ function App() {
           {activeTab === 'organization' && <OrganizationView organization={organization} branchForm={branchForm} setBranchForm={setBranchForm} departmentForm={departmentForm} setDepartmentForm={setDepartmentForm} createBranch={createBranch} createDepartment={createDepartment} canManage={canManagePeople(user.role)} />}
           {activeTab === 'payroll' && <PayrollView periods={periods} selectedPeriodId={selectedPeriodId} setSelectedPeriodId={setSelectedPeriodId} transactions={transactions} form={payrollForm} setForm={setPayrollForm} onProcess={processPayroll} canManage={canManagePayroll(user.role)} />}
           {activeTab === 'leave' && <LeaveView leaveTypes={leaveTypes} balances={leaveBalances} requests={leaveRequests} form={leaveForm} setForm={setLeaveForm} onCreate={createLeave} onUpdate={updateLeaveStatus} canApprove={canApprove(user.role)} />}
-          {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} />}
+          {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} />}\n          {activeTab === 'attendance' && <AttendanceView employees={employees} rows={attendance} summary={attendanceSummary} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
           {activeTab === 'audit' && <AuditView rows={audit} />}
           {activeTab === 'reports' && <ReportsView reports={reports} />}
         </div>
@@ -212,6 +212,31 @@ function EssView({ profile, payslips }: { profile: Employee | null; payslips: Pa
 
 function AuditView({ rows }: { rows: AuditLog[] }) {
   return <div className="stack-layout"><Panel title="Audit trail" eyebrow="CONTROL AND GOVERNANCE"><p className="muted">Recent tenant-scoped create, update, and payroll actions captured by the ASP.NET Core API.</p><DataTable headers={['Time', 'Action', 'Entity', 'User', 'Details']} rows={rows.map(row => [formatDate(row.createdAt), <StatusBadge key={row.id} value={row.action} />, `${row.entityType}${row.entityId ? ` #${row.entityId}` : ''}`, row.userName || 'System', row.details || '—'])} empty="No audit events recorded yet." /></Panel></div>
+}
+
+function AttendanceView({ employees, rows, summary, canManage, onRefresh, showNotice }: { employees: Employee[]; rows: Attendance[]; summary: AttendanceSummary | null; canManage: boolean; onRefresh: () => Promise<void>; showNotice: (type: 'success' | 'error', text: string) => void }) {
+  const [form, setForm] = useState({ employeeId: '', attendanceDate: new Date().toISOString().slice(0,10), checkIn: '08:30', checkOut: '17:30', status: 'Present', notes: '' })
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    try {
+      const dateTime = (time: string) => time ? form.attendanceDate + 'T' + time + ':00Z' : undefined
+      await api.createAttendance({ employeeId: Number(form.employeeId), attendanceDate: form.attendanceDate, checkIn: dateTime(form.checkIn), checkOut: dateTime(form.checkOut), status: form.status, notes: form.notes || null })
+      await onRefresh(); showNotice('success', 'Attendance recorded.')
+    } catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not record attendance.') }
+  }
+  return <div className="stack-layout">
+    <section className="metric-grid"><Metric label="Present" value={summary?.present ?? 0} detail="Recent period" accent="blue" /><Metric label="Late" value={summary?.late ?? 0} detail="Late arrivals" accent="green" /><Metric label="Absent" value={summary?.absent ?? 0} detail="Absent records" accent="purple" /><Metric label="Hours worked" value={(summary?.hoursWorked ?? 0).toFixed(1)} detail="Recorded hours" accent="orange" /></section>
+    {canManage && <section className="panel"><div className="panel-heading"><div><span className="eyebrow">TIME & ATTENDANCE</span><h2>Record attendance</h2></div></div><form className="form-grid" onSubmit={submit}>
+      <label>Employee<select required value={form.employeeId} onChange={e => setForm({...form, employeeId:e.target.value})}><option value="">Select employee</option>{employees.map(e=><option key={e.id} value={e.id}>{e.employeeNo} — {e.fullName}</option>)}</select></label>
+      <label>Date<input type="date" required value={form.attendanceDate} onChange={e=>setForm({...form,attendanceDate:e.target.value})}/></label>
+      <label>Check in<input type="time" value={form.checkIn} onChange={e=>setForm({...form,checkIn:e.target.value})}/></label>
+      <label>Check out<input type="time" value={form.checkOut} onChange={e=>setForm({...form,checkOut:e.target.value})}/></label>
+      <label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>{['Present','Late','Absent','Leave','HalfDay','Holiday','Weekend'].map(x=><option key={x}>{x}</option>)}</select></label>
+      <label>Notes<input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></label>
+      <button className="primary-button" type="submit">Record attendance</button>
+    </form></section>}
+    <section className="panel"><div className="panel-heading"><div><span className="eyebrow">ATTENDANCE LOG</span><h2>Recent records</h2></div></div><DataTable headers={['Date','Employee','Status','Check in','Check out','Hours','Notes']} rows={rows.map(r=>[formatDate(r.attendanceDate),r.employeeNo+' — '+r.employeeName,r.status,r.checkIn?new Date(r.checkIn).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}):'—',r.checkOut?new Date(r.checkOut).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}):'—',r.hoursWorked.toFixed(2),r.notes||'—'])} empty="No attendance records found." /></section>
+  </div>
 }
 
 function ReportsView({ reports }: { reports: Report[] }) {
