@@ -105,6 +105,23 @@ public class EmployeesController(BluePrintHrDbContext db, IRequestContext contex
         return Ok(ToDto(employee));
     }
 
+    [HttpDelete("{id:int}")]
+    [Authorize(Policy = "CanManageEmployees")]
+    public async Task<IActionResult> Deactivate(int id)
+    {
+        var employee = await db.Employees.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == context.TenantId);
+        if (employee is null) return NotFound();
+
+        if (await db.Users.AnyAsync(x => x.TenantId == context.TenantId && x.EmployeeId == id && x.Role == UserRole.Employee))
+            return Conflict(new { message = "This employee has a linked login. Disable or reassign the login before deactivation." });
+
+        employee.EmploymentStatus = "Inactive";
+        employee.TerminationDate ??= DateTime.UtcNow.Date;
+        await db.SaveChangesAsync();
+        await AuditAsync("DEACTIVATE", "Employee", employee.Id, $"Employee {employee.EmployeeNo} deactivated.");
+        return NoContent();
+    }
+
     private async Task AuditAsync(string action, string entity, int id, string details)
     {
         db.AuditLogs.Add(new AuditLog { TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name, Action = action, EntityType = entity, EntityId = id, Details = details, IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() });
