@@ -36,7 +36,7 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
         modelBuilder.Entity<Tenant>(entity =>
         {
             entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
-            entity.HasIndex(x => x.Subdomain).IsUnique().HasFilter("[Subdomain] IS NOT NULL");
+            entity.HasIndex(x => x.Subdomain).IsUnique();
         });
 
         modelBuilder.Entity<Branch>().HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
