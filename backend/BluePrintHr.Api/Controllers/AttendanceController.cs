@@ -17,9 +17,24 @@ public class AttendanceController(BluePrintHrDbContext db, IRequestContext conte
     public async Task<ActionResult<IReadOnlyList<AttendanceDto>>> List([FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int? employeeId)
     {
         var query = db.AttendanceRecords.AsNoTracking().Where(x => x.TenantId == context.TenantId);
+
+        if (context.Role == nameof(UserRole.Employee))
+        {
+            if (!context.EmployeeId.HasValue)
+                return Forbid();
+
+            query = query.Where(x => x.EmployeeId == context.EmployeeId.Value);
+
+            if (employeeId.HasValue && employeeId.Value != context.EmployeeId.Value)
+                return Forbid();
+        }
+        else if (employeeId.HasValue)
+        {
+            query = query.Where(x => x.EmployeeId == employeeId.Value);
+        }
+
         if (from.HasValue) query = query.Where(x => x.AttendanceDate >= from.Value.Date);
         if (to.HasValue) query = query.Where(x => x.AttendanceDate <= to.Value.Date);
-        if (employeeId.HasValue) query = query.Where(x => x.EmployeeId == employeeId.Value);
 
         var rows = await query.Include(x => x.Employee).OrderByDescending(x => x.AttendanceDate).ThenBy(x => x.EmployeeId).Take(500).ToListAsync();
         return Ok(rows.Select(ToDto).ToList());
@@ -30,7 +45,18 @@ public class AttendanceController(BluePrintHrDbContext db, IRequestContext conte
     {
         var start = (from ?? DateTime.UtcNow.Date.AddDays(-29)).Date;
         var end = (to ?? DateTime.UtcNow.Date).Date;
-        var rows = await db.AttendanceRecords.AsNoTracking().Where(x => x.TenantId == context.TenantId && x.AttendanceDate >= start && x.AttendanceDate <= end).ToListAsync();
+        var query = db.AttendanceRecords.AsNoTracking()
+            .Where(x => x.TenantId == context.TenantId && x.AttendanceDate >= start && x.AttendanceDate <= end);
+
+        if (context.Role == nameof(UserRole.Employee))
+        {
+            if (!context.EmployeeId.HasValue)
+                return Forbid();
+
+            query = query.Where(x => x.EmployeeId == context.EmployeeId.Value);
+        }
+
+        var rows = await query.ToListAsync();
 
         return Ok(new AttendanceSummaryDto(
             start, end, rows.Count(x => x.Status == AttendanceStatus.Present),
