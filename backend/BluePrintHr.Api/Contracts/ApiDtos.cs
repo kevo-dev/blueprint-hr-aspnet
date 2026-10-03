@@ -23,6 +23,7 @@ public record CreateLeaveTypeRequest(string Name, int DefaultDays, bool Paid, st
 public record UpdateLeaveTypeRequest(string Name, int DefaultDays, bool Paid, string? Description);
 public record OrganizationDto(IReadOnlyList<Branch> Branches, IReadOnlyList<Department> Departments, IReadOnlyList<Designation> Designations, IReadOnlyList<Grade> Grades, IReadOnlyList<EmploymentType> EmploymentTypes);
 public record PayrollPeriodDto(int Id, string Name, int Month, int Year, string Status, DateTime? ProcessedAt);
+public record CreatePayrollPeriodRequest(int Month, int Year);
 public record PayrollTransactionDto(int Id, int EmployeeId, string EmployeeName, decimal GrossPay, decimal Paye, decimal Nssf, decimal Shif, decimal HousingLevy, decimal TotalDeductions, decimal NetPay, string Status);
 public record PayrollProcessRequest(int PayrollPeriodId, decimal Allowances = 0, decimal OtherDeductions = 0);
 public record PayrollComponentDto(int Id, int EmployeeId, string Name, string ComponentType, decimal Amount, bool Taxable, bool Recurring, bool Active);
