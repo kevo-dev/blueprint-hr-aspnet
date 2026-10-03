@@ -82,6 +82,16 @@ public class AccountsController(BluePrintHrDbContext db, IRequestContext context
         return NoContent();
     }
 
+
+    [HttpGet("users")]
+    [Authorize(Policy = "CanManageEmployees")]
+    public async Task<IActionResult> Users()
+    {
+        var users = await db.Users.AsNoTracking().Where(x => x.TenantId == context.TenantId).OrderBy(x => x.Name)
+            .Select(x => new { x.Id, x.Name, x.Email, Role = x.Role.ToString(), x.Active, x.EmployeeId, x.LastSignedIn }).ToListAsync();
+        return Ok(users);
+    }
+
     [HttpPost("employees/{employeeId:int}/activate")]
     [Authorize(Policy = "CanManageEmployees")]
     public async Task<ActionResult<AccountStatusDto>> ActivateEmployee(int employeeId, ActivateEmployeeAccountRequest request)
