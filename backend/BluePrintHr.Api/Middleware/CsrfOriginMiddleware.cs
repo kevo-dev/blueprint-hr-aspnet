@@ -28,8 +28,11 @@ public sealed class CsrfOriginMiddleware(RequestDelegate next, IConfiguration co
             var origin = context.Request.Headers.Origin.FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(origin))
             {
-                var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-                if (!allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                var normalizedOrigin = origin.TrimEnd('/');
+                var allowedOrigins = (configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim().TrimEnd('/'));
+                if (!allowedOrigins.Contains(normalizedOrigin, StringComparer.OrdinalIgnoreCase))
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     await context.Response.WriteAsJsonAsync(new { message = "Request origin is not trusted." });
