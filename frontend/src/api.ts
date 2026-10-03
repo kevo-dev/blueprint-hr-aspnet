@@ -1,7 +1,7 @@
-const API_BASE = (import.meta.env.VITE_API_URL || 'https://blueprint-hr-aspnet.onrender.com').replace(/\/+$/, '')
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, '')
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(API_BASE === '/api' ? `${API_BASE}${path.replace(/^\/api/, '')}` : `${API_BASE}${path}`, {
     ...options,
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
