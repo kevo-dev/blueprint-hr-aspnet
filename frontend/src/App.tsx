@@ -212,7 +212,9 @@ function App() {
           {activeTab === 'ess' && <EssView profile={essProfile} payslips={payslips} onDownloadPayslip={downloadPayslip} />}
           {activeTab === 'attendance' && <AttendanceView employees={employees} rows={attendance} summary={attendanceSummary} canManage={canManagePeople(user.role)} onRefresh={refresh} showNotice={showNotice} />}
           {activeTab === 'audit' && <AuditView rows={audit} />}
-          {activeTab === 'reports' && <ReportsView reports={reports} />}\n          {activeTab === 'account' && <AccountView user={user} onLogout={onLogout} showNotice={showNotice} />}\n          {activeTab === 'platform' && <PlatformView showNotice={showNotice} />}
+          {activeTab === 'reports' && <ReportsView reports={reports} />}
+          {activeTab === 'account' && <AccountView user={user} onLogout={onLogout} showNotice={showNotice} />}
+          {activeTab === 'platform' && <PlatformView showNotice={showNotice} />}
         </div>
       </main>
     </div>
