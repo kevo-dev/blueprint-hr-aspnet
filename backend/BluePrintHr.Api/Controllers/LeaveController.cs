@@ -91,7 +91,7 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context) :
         var overlaps = await db.LeaveRequests.AnyAsync(x =>
             x.TenantId == context.TenantId &&
             x.EmployeeId == employeeId.Value &&
-            x.Status is LeaveRequestStatus.Pending or LeaveRequestStatus.Approved &&
+            (x.Status == LeaveRequestStatus.Pending || x.Status == LeaveRequestStatus.Approved) &&
             x.StartDate <= request.EndDate.Date &&
             x.EndDate >= request.StartDate.Date);
 
