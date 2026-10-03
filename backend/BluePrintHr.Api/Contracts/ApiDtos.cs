@@ -11,6 +11,16 @@ public record CreateEmployeeRequest(string EmployeeNo, string FirstName, string 
 public record UpdateEmployeeRequest(string EmployeeNo, string FirstName, string LastName, string KraPin, decimal BasicSalary, string? MiddleName, string? PayrollNo, string? Email, string? Phone, string? NssfNo, string? ShifNo, int? BranchId, int? DepartmentId, int? DesignationId, int? GradeId, int? EmploymentTypeId, DateTime? EmploymentDate, DateTime? TerminationDate, string EmploymentStatus, string? BankName, string? BankBranch, string? AccountNumber);
 public record CreateBranchRequest(string Name, string? Code, string? Location);
 public record CreateDepartmentRequest(string Name, string? Code, int? BranchId);
+public record UpdateBranchRequest(string Name, string? Code, string? Location);
+public record UpdateDepartmentRequest(string Name, string? Code, int? BranchId);
+public record CreateDesignationRequest(string Name);
+public record UpdateDesignationRequest(string Name);
+public record CreateGradeRequest(string Name, string? Level, decimal MinSalary, decimal MaxSalary);
+public record UpdateGradeRequest(string Name, string? Level, decimal MinSalary, decimal MaxSalary);
+public record CreateEmploymentTypeRequest(string Name, string? Description);
+public record UpdateEmploymentTypeRequest(string Name, string? Description);
+public record CreateLeaveTypeRequest(string Name, int DefaultDays, bool Paid, string? Description);
+public record UpdateLeaveTypeRequest(string Name, int DefaultDays, bool Paid, string? Description);
 public record OrganizationDto(IReadOnlyList<Branch> Branches, IReadOnlyList<Department> Departments, IReadOnlyList<Designation> Designations, IReadOnlyList<Grade> Grades, IReadOnlyList<EmploymentType> EmploymentTypes);
 public record PayrollPeriodDto(int Id, string Name, int Month, int Year, string Status, DateTime? ProcessedAt);
 public record PayrollTransactionDto(int Id, int EmployeeId, string EmployeeName, decimal GrossPay, decimal Paye, decimal Nssf, decimal Shif, decimal HousingLevy, decimal TotalDeductions, decimal NetPay, string Status);
