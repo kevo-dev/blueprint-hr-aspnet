@@ -20,6 +20,30 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
         return Ok(periods.Select(x => new PayrollPeriodDto(x.Id, x.Name, x.Month, x.Year, x.Status.ToString(), x.ProcessedAt)).ToList());
     }
 
+    [HttpPost("periods")]
+    [Authorize(Policy = "CanManagePayroll")]
+    public async Task<ActionResult<PayrollPeriodDto>> CreatePeriod(CreatePayrollPeriodRequest request)
+    {
+        if (request.Month is < 1 or > 12 || request.Year < 2000 || request.Year > 2100)
+            return BadRequest(new { message = "A valid payroll month and year are required." });
+        if (await db.PayrollPeriods.AnyAsync(x => x.TenantId == context.TenantId && x.Month == request.Month && x.Year == request.Year))
+            return Conflict(new { message = "A payroll period already exists for that month." });
+
+        var period = new PayrollPeriod
+        {
+            TenantId = context.TenantId,
+            Month = request.Month,
+            Year = request.Year,
+            Name = new DateTime(request.Year, request.Month, 1).ToString("MMMM yyyy"),
+            Status = PayrollStatus.Open
+        };
+        db.PayrollPeriods.Add(period);
+        await db.SaveChangesAsync();
+        db.AuditLogs.Add(new AuditLog { TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name, Action = "CREATE", EntityType = "PayrollPeriod", EntityId = period.Id, Details = period.Name });
+        await db.SaveChangesAsync();
+        return Ok(new PayrollPeriodDto(period.Id, period.Name, period.Month, period.Year, period.Status.ToString(), period.ProcessedAt));
+    }
+
     [HttpGet("transactions")]
     public async Task<ActionResult<IReadOnlyList<PayrollTransactionDto>>> Transactions([FromQuery] int payrollPeriodId)
     {
@@ -91,6 +115,8 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
             });
         }
         db.PayrollTransactions.AddRange(transactions);
+        foreach (var oneOff in components.Where(x => !x.Recurring))
+            oneOff.Active = false;
         period.Status = PayrollStatus.Approved;
         period.ProcessedAt = DateTime.UtcNow;
         db.AuditLogs.Add(new AuditLog { TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name, Action = "PROCESS", EntityType = "PayrollPeriod", EntityId = period.Id, Details = $"Processed {transactions.Count} employee transactions." });
