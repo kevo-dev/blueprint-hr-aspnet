@@ -39,21 +39,6 @@ jobs:
       - name: Run tests
         run: dotnet test BluePrintHr.sln --configuration Release --no-build --verbosity normal
 
-      - name: Generate idempotent EF Core SQL script
-        run: >-
-          dotnet ef migrations script --idempotent
-          --project backend/BluePrintHr.Api/BluePrintHr.Api.csproj
-          --startup-project backend/BluePrintHr.Api/BluePrintHr.Api.csproj
-          --context BluePrintHrDbContext
-          --output ${{ runner.temp }}/InitialCreate.sql
-
-      - name: Upload migration script
-        uses: actions/upload-artifact@v4
-        with:
-          name: ef-migration-script
-          path: ${{ runner.temp }}/InitialCreate.sql
-          if-no-files-found: error
-
   frontend:
     name: Build and lint React
     runs-on: ubuntu-latest
