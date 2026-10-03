@@ -31,7 +31,7 @@ public sealed class KenyaPayrollCalculator : IPayrollCalculator
         var shif = Math.Round(gross * ShifRate, 2);
         var housingLevy = Math.Round(gross * HousingLevyRate, 2);
         var taxableGross = basicSalary + (taxableAllowances ?? allowances);
-        var taxablePay = Math.Max(taxableGross - nssf, 0);
+        var taxablePay = Math.Max(taxableGross - nssf - shif - housingLevy, 0);
         var payeBeforeRelief = CalculatePaye(taxablePay);
         var paye = Math.Max(payeBeforeRelief - PersonalRelief, 0);
         var deductions = Math.Round(paye + nssf + shif + housingLevy + otherDeductions, 2);
