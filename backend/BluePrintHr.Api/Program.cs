@@ -27,7 +27,7 @@ else
         throw new InvalidOperationException("Database:DefaultConnection is required when Database:UseInMemory is false.");
 
     builder.Services.AddDbContext<BluePrintHrDbContext>(options =>
-        options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(5)).UseSnakeCaseNamingConvention());
+        options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(5)));
 }
 
 builder.Services.AddScoped<IPasswordService, PasswordService>();
