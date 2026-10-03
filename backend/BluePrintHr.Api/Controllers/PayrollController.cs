@@ -29,6 +29,20 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
         return Ok(transactions.Select(ToDto).ToList());
     }
 
+    [HttpPost("periods/{id:int}/lock")]
+    [Authorize(Policy = "CanManagePayroll")]
+    public async Task<IActionResult> LockPeriod(int id)
+    {
+        var period = await db.PayrollPeriods.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == context.TenantId);
+        if (period is null) return NotFound();
+        if (period.Status != PayrollStatus.Approved) return Conflict(new { message = "Only approved payroll periods can be locked." });
+        period.Status = PayrollStatus.Locked;
+        await db.SaveChangesAsync();
+        db.AuditLogs.Add(new AuditLog { TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name, Action = "LOCK", EntityType = "PayrollPeriod", EntityId = id, Details = "Payroll period locked." });
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpPost("process")]
     [Authorize(Policy = "CanManagePayroll")]
     public async Task<ActionResult<IReadOnlyList<PayrollTransactionDto>>> Process(PayrollProcessRequest request)
@@ -41,19 +55,28 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
         await db.SaveChangesAsync();
 
         var employees = await db.Employees.Where(x => x.TenantId == context.TenantId && x.EmploymentStatus == "Active").ToListAsync();
+        var components = await db.EmployeePayrollComponents.AsNoTracking()
+            .Where(x => x.TenantId == context.TenantId && x.Active)
+            .ToListAsync();
         var oldTransactions = await db.PayrollTransactions.Where(x => x.TenantId == context.TenantId && x.PayrollPeriodId == period.Id).ToListAsync();
         db.PayrollTransactions.RemoveRange(oldTransactions);
         var transactions = new List<PayrollTransaction>();
         foreach (var employee in employees)
         {
-            var result = calculator.Calculate(employee.BasicSalary, request.Allowances, request.OtherDeductions);
+            var employeeComponents = components.Where(x => x.EmployeeId == employee.Id).ToList();
+            var componentAllowances = employeeComponents.Where(x => x.ComponentType == "Allowance").Sum(x => x.Amount);
+            var taxableAllowances = employeeComponents.Where(x => x.ComponentType == "Allowance" && x.Taxable).Sum(x => x.Amount);
+            var componentDeductions = employeeComponents.Where(x => x.ComponentType == "Deduction").Sum(x => x.Amount);
+            var totalAllowances = request.Allowances + componentAllowances;
+            var totalOtherDeductions = request.OtherDeductions + componentDeductions;
+            var result = calculator.Calculate(employee.BasicSalary, totalAllowances, totalOtherDeductions, request.Allowances + taxableAllowances);
             transactions.Add(new PayrollTransaction
             {
                 TenantId = context.TenantId,
                 PayrollPeriodId = period.Id,
                 EmployeeId = employee.Id,
                 BasicSalary = employee.BasicSalary,
-                Allowances = request.Allowances,
+                Allowances = totalAllowances,
                 GrossPay = result.GrossPay,
                 TaxablePay = result.TaxablePay,
                 Paye = result.Paye,
@@ -61,7 +84,7 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
                 Nssf = result.Nssf,
                 Shif = result.Shif,
                 HousingLevy = result.HousingLevy,
-                OtherDeductions = request.OtherDeductions,
+                OtherDeductions = totalOtherDeductions,
                 TotalDeductions = result.TotalDeductions,
                 NetPay = result.NetPay,
                 Status = "Approved"
