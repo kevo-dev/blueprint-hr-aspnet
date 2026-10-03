@@ -214,6 +214,35 @@ public class LeaveRequest
     public DateTime? ReviewedAt { get; set; }
 }
 
+public class EmployeePayrollComponent
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public int EmployeeId { get; set; }
+    public Employee Employee { get; set; } = null!;
+    public string Name { get; set; } = string.Empty;
+    public string ComponentType { get; set; } = "Allowance";
+    public decimal Amount { get; set; }
+    public bool Taxable { get; set; } = true;
+    public bool Recurring { get; set; } = true;
+    public bool Active { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class Notification
+{
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public int UserId { get; set; }
+    public string Type { get; set; } = "Info";
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string? EntityType { get; set; }
+    public int? EntityId { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class AuditLog
 {
     public int Id { get; set; }
