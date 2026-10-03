@@ -5,6 +5,8 @@ using BluePrintHr.Api.Models;
 using BluePrintHr.Api.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,7 @@ else
 
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
 builder.Services.AddScoped<IPayrollCalculator, KenyaPayrollCalculator>();
 
@@ -41,6 +44,12 @@ var cookieSameSite = Enum.TryParse<SameSiteMode>(configuredSameSite, ignoreCase:
     ? parsedSameSite
     : SameSiteMode.Lax;
 var requireHttpsForCookies = builder.Configuration.GetValue<bool>("Auth:RequireHttps");
+var keyDirectory = builder.Configuration["DataProtection:KeyDirectory"];
+if (!string.IsNullOrWhiteSpace(keyDirectory))
+{
+    Directory.CreateDirectory(keyDirectory);
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyDirectory)).SetApplicationName("BluePrintHR");
+}
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
@@ -50,6 +59,15 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     options.Cookie.SecurePolicy = requireHttpsForCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
     options.ExpireTimeSpan = TimeSpan.FromHours(12);
     options.SlidingExpiration = true;
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var stamp = context.Principal?.FindFirstValue("security_stamp");
+        var idValue = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(idValue, out var userId) || string.IsNullOrWhiteSpace(stamp)) { context.RejectPrincipal(); return; }
+        var db = context.HttpContext.RequestServices.GetRequiredService<BluePrintHrDbContext>();
+        var user = await db.Users.AsNoTracking().Include(x => x.Tenant).SingleOrDefaultAsync(x => x.Id == userId);
+        if (user is null || !user.Active || user.Tenant.Status == TenantStatus.Suspended || !string.Equals(user.SecurityStamp, stamp, StringComparison.Ordinal)) context.RejectPrincipal();
+    };
     options.Events.OnRedirectToLogin = context =>
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -84,6 +102,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("frontend");
+app.Use(async (http, next) =>
+{
+    http.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    http.Response.Headers["X-Frame-Options"] = "DENY";
+    http.Response.Headers["Referrer-Policy"] = "no-referrer";
+    http.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    if (http.Request.IsHttps) http.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+    await next();
+});
 app.UseMiddleware<CsrfOriginMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
