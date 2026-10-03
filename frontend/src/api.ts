@@ -29,6 +29,8 @@ export type Department = { id: number; tenantId: number; name: string; code?: st
 export type Organization = { branches: Branch[]; departments: Department[]; designations: { id: number; tenantId: number; name: string }[]; grades: { id: number; tenantId: number; name: string; level?: string; minSalary: number; maxSalary: number }[]; employmentTypes: { id: number; tenantId: number; name: string; description?: string }[] }
 export type PayrollPeriod = { id: number; name: string; month: number; year: number; status: string; processedAt?: string }
 export type PayrollTransaction = { id: number; employeeId: number; employeeName: string; grossPay: number; paye: number; nssf: number; shif: number; housingLevy: number; totalDeductions: number; netPay: number; status: string }
+export type PayrollComponent = { id: number; employeeId: number; name: string; componentType: string; amount: number; taxable: boolean; recurring: boolean; active: boolean }
+export type Notification = { id: number; type: string; title: string; message: string; entityType?: string; entityId?: number; isRead: boolean; createdAt: string }
 export type LeaveType = { id: number; name: string; defaultDays: number; paid: boolean; description?: string }
 export type LeaveBalance = { id: number; employeeId: number; leaveTypeId: number; leaveType: string; year: number; allocatedDays: number; usedDays: number; availableDays: number }
 export type LeaveRequest = { id: number; employeeId: number; employeeName: string; leaveTypeId: number; leaveType: string; startDate: string; endDate: string; daysRequested: number; reason?: string; status: string; createdAt: string }
@@ -68,6 +70,11 @@ export const api = {
   periods: () => request<PayrollPeriod[]>('/api/payroll/periods'),
   transactions: (periodId: number) => request<PayrollTransaction[]>(`/api/payroll/transactions?payrollPeriodId=${periodId}`),
   processPayroll: (body: Record<string, unknown>) => request<PayrollTransaction[]>('/api/payroll/process', json(body)),
+  lockPayrollPeriod: (id: number) => request<void>(`/api/payroll/periods/${id}/lock`, { method: 'POST' }),
+  payrollComponents: (employeeId?: number) => request<PayrollComponent[]>(`/api/payroll/components${employeeId ? `?employeeId=${employeeId}` : ''}`),
+  createPayrollComponent: (body: Record<string, unknown>) => request<PayrollComponent>('/api/payroll/components', json(body)),
+  updatePayrollComponent: (id: number, body: Record<string, unknown>) => request<PayrollComponent>(`/api/payroll/components/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deletePayrollComponent: (id: number) => request<void>(`/api/payroll/components/${id}`, { method: 'DELETE' }),
   leaveTypes: () => request<LeaveType[]>('/api/leave/types'),
   leaveBalances: () => request<LeaveBalance[]>('/api/leave/balances'),
   leaveRequests: () => request<LeaveRequest[]>('/api/leave/requests'),
@@ -82,6 +89,14 @@ export const api = {
   audit: () => request<AuditLog[]>('/api/audit'),
   reports: () => request<Report[]>('/api/reports'),
   reportData: (id: number) => request<ReportData>(`/api/reports/${id}/data`),
+  notifications: () => request<Notification[]>('/api/notifications'),
+  markNotificationRead: (id: number) => request<void>(`/api/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () => request<void>('/api/notifications/read-all', { method: 'PATCH' }),
+  downloadPayslip: async (id: number) => {
+    const response = await fetch(`${API_BASE === '/api' ? '/api' : API_BASE}/payslips/${id}/pdf`, { credentials: 'include' })
+    if (!response.ok) throw new Error('Could not download payslip.')
+    return response.blob()
+  },
   attendance: (from?: string, to?: string) => request<Attendance[]>(`/api/attendance?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) })}`),
   attendanceSummary: () => request<AttendanceSummary>('/api/attendance/summary'),
   createAttendance: (body: Record<string, unknown>) => request<Attendance>('/api/attendance', json(body)),
