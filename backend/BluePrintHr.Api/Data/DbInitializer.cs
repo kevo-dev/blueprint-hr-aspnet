@@ -369,6 +369,31 @@ public static class DbInitializer
         }
         await db.SaveChangesAsync();
 
+        // Seed a small attendance history so the attendance dashboard is useful immediately.
+        var attendanceStart = new DateTime(2026, 9, 1);
+        for (var day = attendanceStart; day <= new DateTime(2026, 10, 2); day = day.AddDays(1))
+        {
+            if (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) continue;
+            foreach (var emp in employees)
+            {
+                if (await db.AttendanceRecords.AnyAsync(x => x.TenantId == tenant.Id && x.EmployeeId == emp.Id && x.AttendanceDate == day)) continue;
+                var late = emp.EmployeeNo == "EMP-003" && day.Day % 5 == 0;
+                var absent = emp.EmployeeNo == "EMP-005" && day.Day == 18;
+                var onLeave = emp.EmployeeNo == "EMP-002" && day.Day is 17 or 18 or 19 or 20 or 21;
+                var status = absent ? AttendanceStatus.Absent : onLeave ? AttendanceStatus.Leave : late ? AttendanceStatus.Late : AttendanceStatus.Present;
+                DateTime? checkIn = status is AttendanceStatus.Absent or AttendanceStatus.Leave ? null : day.AddHours(late ? 9.25 : 8.5);
+                DateTime? checkOut = status is AttendanceStatus.Absent or AttendanceStatus.Leave ? null : day.AddHours(17.5);
+                db.AttendanceRecords.Add(new AttendanceRecord
+                {
+                    TenantId = tenant.Id, EmployeeId = emp.Id, AttendanceDate = day,
+                    CheckIn = checkIn, CheckOut = checkOut, Status = status,
+                    HoursWorked = checkIn.HasValue && checkOut.HasValue ? (decimal)(checkOut.Value - checkIn.Value).TotalHours : 0,
+                    Notes = absent ? "Reported absent" : onLeave ? "Approved annual leave" : late ? "Late arrival" : null
+                });
+            }
+        }
+        await db.SaveChangesAsync();
+
         var reports = new[]
         {
             ("Payroll Summary", "Monthly gross pay, statutory deductions, and net pay by employee.", "/BluePrintHR/PayrollSummary"),
