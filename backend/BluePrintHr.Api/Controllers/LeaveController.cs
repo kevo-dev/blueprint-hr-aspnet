@@ -25,6 +25,57 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context) :
         return Ok(types.Select(x => new LeaveTypeDto(x.Id, x.Name, x.DefaultDays, x.Paid, x.Description)).ToList());
     }
 
+    [HttpPost("types")]
+    [Authorize(Policy = "CanManageEmployees")]
+    public async Task<ActionResult<LeaveTypeDto>> CreateType(CreateLeaveTypeRequest request)
+    {
+        var name = request.Name.Trim();
+        if (string.IsNullOrWhiteSpace(name) || request.DefaultDays <= 0)
+            return BadRequest(new { message = "Leave type name and positive default days are required." });
+        if (await db.LeaveTypes.AnyAsync(x => x.TenantId == context.TenantId && x.Name == name))
+            return Conflict(new { message = "Leave type already exists." });
+
+        var type = new LeaveType { TenantId = context.TenantId, Name = name, DefaultDays = request.DefaultDays, Paid = request.Paid, Description = request.Description?.Trim() };
+        db.LeaveTypes.Add(type);
+        await db.SaveChangesAsync();
+        await AuditAsync("CREATE", "LeaveType", type.Id, type.Name);
+        return Ok(new LeaveTypeDto(type.Id, type.Name, type.DefaultDays, type.Paid, type.Description));
+    }
+
+    [HttpPut("types/{id:int}")]
+    [Authorize(Policy = "CanManageEmployees")]
+    public async Task<ActionResult<LeaveTypeDto>> UpdateType(int id, UpdateLeaveTypeRequest request)
+    {
+        var type = await db.LeaveTypes.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == context.TenantId);
+        if (type is null) return NotFound();
+        var name = request.Name.Trim();
+        if (string.IsNullOrWhiteSpace(name) || request.DefaultDays <= 0)
+            return BadRequest(new { message = "Leave type name and positive default days are required." });
+        if (await db.LeaveTypes.AnyAsync(x => x.TenantId == context.TenantId && x.Name == name && x.Id != id))
+            return Conflict(new { message = "Leave type already exists." });
+
+        type.Name = name; type.DefaultDays = request.DefaultDays; type.Paid = request.Paid; type.Description = request.Description?.Trim();
+        await db.SaveChangesAsync();
+        await AuditAsync("UPDATE", "LeaveType", id, type.Name);
+        return Ok(new LeaveTypeDto(type.Id, type.Name, type.DefaultDays, type.Paid, type.Description));
+    }
+
+    [HttpDelete("types/{id:int}")]
+    [Authorize(Policy = "CanManageEmployees")]
+    public async Task<IActionResult> DeleteType(int id)
+    {
+        var type = await db.LeaveTypes.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == context.TenantId);
+        if (type is null) return NotFound();
+        if (await db.LeaveBalances.AnyAsync(x => x.TenantId == context.TenantId && x.LeaveTypeId == id) ||
+            await db.LeaveRequests.AnyAsync(x => x.TenantId == context.TenantId && x.LeaveTypeId == id))
+            return Conflict(new { message = "Leave type is in use and cannot be deleted." });
+
+        db.LeaveTypes.Remove(type);
+        await db.SaveChangesAsync();
+        await AuditAsync("DELETE", "LeaveType", id, type.Name);
+        return NoContent();
+    }
+
     [HttpGet("balances")]
     public async Task<ActionResult<IReadOnlyList<LeaveBalanceDto>>> Balances([FromQuery] int? employeeId = null)
     {
@@ -127,6 +178,43 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context) :
             leave.Id, leave.EmployeeId, "", leave.LeaveTypeId, leaveType.Name,
             leave.StartDate, leave.EndDate, leave.DaysRequested, leave.Reason,
             leave.Status.ToString(), leave.CreatedAt));
+    }
+
+    [HttpPatch("requests/{id:int}/cancel")]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        var leave = await db.LeaveRequests.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == context.TenantId);
+        if (leave is null) return NotFound();
+
+        if (!context.CanManageEmployees && leave.EmployeeId != context.EmployeeId)
+            return Forbid();
+
+        if (leave.Status is LeaveRequestStatus.Rejected or LeaveRequestStatus.Cancelled)
+            return Conflict(new { message = "This leave request is already closed." });
+
+        if (leave.Status == LeaveRequestStatus.Approved)
+        {
+            var balance = await db.LeaveBalances.SingleOrDefaultAsync(x =>
+                x.TenantId == context.TenantId &&
+                x.EmployeeId == leave.EmployeeId &&
+                x.LeaveTypeId == leave.LeaveTypeId &&
+                x.Year == leave.StartDate.Year);
+            if (balance is not null)
+                balance.UsedDays = Math.Max(0, balance.UsedDays - leave.DaysRequested);
+        }
+
+        leave.Status = LeaveRequestStatus.Cancelled;
+        leave.ReviewedBy = context.UserId;
+        leave.ReviewedAt = DateTime.UtcNow;
+        db.AuditLogs.Add(new AuditLog
+        {
+            TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name,
+            Action = "CANCEL", EntityType = "LeaveRequest", EntityId = id, Details = "Leave request cancelled."
+        });
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return NoContent();
     }
 
     [HttpPatch("requests/{id:int}/status")]
