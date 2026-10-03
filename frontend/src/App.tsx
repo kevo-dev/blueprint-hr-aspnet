@@ -8,18 +8,18 @@ type Tab = 'dashboard' | 'employees' | 'organization' | 'payroll' | 'leave' | 'e
 
 const formatMoney = (value: number) => `KES ${Number(value || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const formatDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
-const canManagePeople = (role: string) => ['Super Admin', 'Company Admin', 'HR Manager'].includes(role)
-const canManagePayroll = (role: string) => ['Super Admin', 'Company Admin', 'Payroll Manager'].includes(role)
-const canApprove = (role: string) => ['Super Admin', 'Company Admin', 'HR Manager', 'Payroll Manager'].includes(role)
-const canViewAudit = (role: string) => ['Super Admin', 'Company Admin', 'HR Manager'].includes(role)
+const canManagePeople = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'HrManager'].includes(role)
+const canManagePayroll = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'PayrollManager'].includes(role)
+const canApprove = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'HrManager', 'PayrollManager'].includes(role)
+const canViewAudit = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'HrManager'].includes(role)
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [booting, setBooting] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [loginEmail, setLoginEmail] = useState('admin@blueprinthr.co.ke')
-  const [loginPassword, setLoginPassword] = useState('BluePrint!2026')
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
   const [loginBusy, setLoginBusy] = useState(false)
   const [dashboard, setDashboard] = useState<Dashboard | null>(null)
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -46,25 +46,45 @@ function App() {
   }
 
   const loadData = async (activeUser: User) => {
+    const failures: string[] = []
+    const load = async <T,>(label: string, task: () => Promise<T>, apply: (value: T) => void) => {
+      try {
+        apply(await task())
+      } catch (error) {
+        failures.push(label + ': ' + (error instanceof Error ? error.message : 'request failed'))
+      }
+    }
+
+    await Promise.all([
+      load('Dashboard', api.dashboard, setDashboard),
+      load('Employees', api.employees, setEmployees),
+      load('Organization', api.organization, setOrganization),
+      load('Payroll periods', api.periods, rows => {
+        setPeriods(rows)
+        setSelectedPeriodId(previous => previous || rows[0]?.id || 0)
+      }),
+      load('Leave types', api.leaveTypes, setLeaveTypes),
+      load('Leave balances', api.leaveBalances, setLeaveBalances),
+      load('Leave requests', api.leaveRequests, setLeaveRequests),
+      load('ESS profile', api.essProfile, setEssProfile),
+      load('Payslips', api.payslips, setPayslips),
+      load('Reports', api.reports, setReports),
+      load('Attendance', api.attendance, setAttendance),
+      load('Attendance summary', api.attendanceSummary, setAttendanceSummary),
+      ...(canViewAudit(activeUser.role) ? [load('Audit', api.audit, setAudit)] : []),
+    ])
+
     try {
-      const [dash, employeeRows, org, periodRows, types, balances, requests, profile, payslipRows, reportRows, attendanceRows, attendanceStats] = await Promise.all([
-        api.dashboard(), api.employees(), api.organization(), api.periods(), api.leaveTypes(), api.leaveBalances(), api.leaveRequests(), api.essProfile(), api.payslips(), api.reports(), api.attendance(), api.attendanceSummary(),
-      ])
-      setDashboard(dash)
-      setEmployees(employeeRows)
-      setOrganization(org)
-      setPeriods(periodRows)
-      setSelectedPeriodId(previous => previous || periodRows[0]?.id || 0)
-      setLeaveTypes(types)
-      setLeaveBalances(balances)
-      setLeaveRequests(requests)
-      setEssProfile(profile)
-      setPayslips(payslipRows)
-      setReports(reportRows)\n      setAttendance(attendanceRows)\n      setAttendanceSummary(attendanceStats)
-      if (periodRows[0]) setTransactions(await api.transactions(periodRows[0].id))
-      if (canViewAudit(activeUser.role)) setAudit(await api.audit())
+      const currentPeriods = await api.periods()
+      const periodId = selectedPeriodId || currentPeriods[0]?.id || 0
+      if (periodId) setTransactions(await api.transactions(periodId))
+      else setTransactions([])
     } catch (error) {
-      showNotice('error', error instanceof Error ? error.message : 'Could not load workspace data.')
+      failures.push('Payroll transactions: ' + (error instanceof Error ? error.message : 'request failed'))
+    }
+
+    if (failures.length) {
+      showNotice('error', 'Some workspace data could not be loaded. ' + failures.slice(0, 3).join(' · '))
     }
   }
 
