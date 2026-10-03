@@ -33,7 +33,10 @@ export type LeaveType = { id: number; name: string; defaultDays: number; paid: b
 export type LeaveBalance = { id: number; employeeId: number; leaveTypeId: number; leaveType: string; year: number; allocatedDays: number; usedDays: number; availableDays: number }
 export type LeaveRequest = { id: number; employeeId: number; employeeName: string; leaveTypeId: number; leaveType: string; startDate: string; endDate: string; daysRequested: number; reason?: string; status: string; createdAt: string }
 export type AuditLog = { id: number; action: string; entityType: string; entityId?: number; userName?: string; details?: string; createdAt: string }
-export type Report = { id: number; name: string; description: string; reportPath: string; launchUrl?: string }\nexport type ReportData = { name: string; description: string; columns: string[]; rows: string[][]; generatedAt: string }\nexport type Attendance = { id: number; employeeId: number; employeeName: string; employeeNo: string; attendanceDate: string; checkIn?: string; checkOut?: string; status: string; hoursWorked: number; notes?: string }\nexport type AttendanceSummary = { from: string; to: string; present: number; late: number; absent: number; leave: number; halfDay: number; hoursWorked: number }
+export type Report = { id: number; name: string; description: string; reportPath: string; launchUrl?: string }
+export type ReportData = { name: string; description: string; columns: string[]; rows: string[][]; generatedAt: string }
+export type Attendance = { id: number; employeeId: number; employeeName: string; employeeNo: string; attendanceDate: string; checkIn?: string; checkOut?: string; status: string; hoursWorked: number; notes?: string }
+export type AttendanceSummary = { from: string; to: string; present: number; late: number; absent: number; leave: number; halfDay: number; hoursWorked: number }
 
 const json = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.stringify(body) })
 
@@ -58,5 +61,10 @@ export const api = {
   essProfile: () => request<Employee | null>('/api/ess/profile'),
   payslips: () => request<PayrollTransaction[]>('/api/ess/payslips'),
   audit: () => request<AuditLog[]>('/api/audit'),
-  reports: () => request<Report[]>('/api/reports'),\n  reportData: (id: number) => request<ReportData>(`/api/reports/${id}/data`),\n  attendance: (from?: string, to?: string) => request<Attendance[]>(`/api/attendance?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) })}`),\n  attendanceSummary: () => request<AttendanceSummary>('/api/attendance/summary'),\n  createAttendance: (body: Record<string, unknown>) => request<Attendance>('/api/attendance', json(body)),\n  updateAttendance: (id: number, body: Record<string, unknown>) => request<Attendance>(`/api/attendance/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  reports: () => request<Report[]>('/api/reports'),
+  reportData: (id: number) => request<ReportData>(`/api/reports/${id}/data`),
+  attendance: (from?: string, to?: string) => request<Attendance[]>(`/api/attendance?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) })}`),
+  attendanceSummary: () => request<AttendanceSummary>('/api/attendance/summary'),
+  createAttendance: (body: Record<string, unknown>) => request<Attendance>('/api/attendance', json(body)),
+  updateAttendance: (id: number, body: Record<string, unknown>) => request<Attendance>(`/api/attendance/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
 }
