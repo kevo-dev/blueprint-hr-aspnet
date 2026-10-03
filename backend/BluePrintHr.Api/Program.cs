@@ -115,6 +115,15 @@ app.UseMiddleware<CsrfOriginMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "BluePrintHr.Api" }));
+app.MapGet("/health/ready", async (BluePrintHrDbContext db) =>
+{
+    try
+    {
+        var connected = await db.Database.CanConnectAsync();
+        return connected ? Results.Ok(new { status = "ready", database = "ok" }) : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch { return Results.StatusCode(StatusCodes.Status503ServiceUnavailable); }
+});
 app.MapControllers();
 
 await DbInitializer.InitializeAsync(app.Services, app.Configuration);
