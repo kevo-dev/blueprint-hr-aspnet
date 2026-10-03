@@ -25,6 +25,10 @@ public record OrganizationDto(IReadOnlyList<Branch> Branches, IReadOnlyList<Depa
 public record PayrollPeriodDto(int Id, string Name, int Month, int Year, string Status, DateTime? ProcessedAt);
 public record PayrollTransactionDto(int Id, int EmployeeId, string EmployeeName, decimal GrossPay, decimal Paye, decimal Nssf, decimal Shif, decimal HousingLevy, decimal TotalDeductions, decimal NetPay, string Status);
 public record PayrollProcessRequest(int PayrollPeriodId, decimal Allowances = 0, decimal OtherDeductions = 0);
+public record PayrollComponentDto(int Id, int EmployeeId, string Name, string ComponentType, decimal Amount, bool Taxable, bool Recurring, bool Active);
+public record CreatePayrollComponentRequest(int EmployeeId, string Name, string ComponentType, decimal Amount, bool Taxable = true, bool Recurring = true);
+public record UpdatePayrollComponentRequest(string Name, string ComponentType, decimal Amount, bool Taxable, bool Recurring, bool Active);
+public record NotificationDto(int Id, string Type, string Title, string Message, string? EntityType, int? EntityId, bool IsRead, DateTime CreatedAt);
 public record LeaveTypeDto(int Id, string Name, int DefaultDays, bool Paid, string? Description);
 public record LeaveBalanceDto(int Id, int EmployeeId, int LeaveTypeId, string LeaveType, int Year, decimal AllocatedDays, decimal UsedDays, decimal AvailableDays);
 public record LeaveRequestDto(int Id, int EmployeeId, string EmployeeName, int LeaveTypeId, string LeaveType, DateTime StartDate, DateTime EndDate, decimal DaysRequested, string? Reason, string Status, DateTime CreatedAt);
