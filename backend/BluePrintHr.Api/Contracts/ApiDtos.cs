@@ -42,3 +42,13 @@ public record ReportDataDto(string Name, string Description, IReadOnlyList<strin
 public record AttendanceDto(int Id, int EmployeeId, string EmployeeName, string EmployeeNo, DateTime AttendanceDate, DateTime? CheckIn, DateTime? CheckOut, string Status, decimal HoursWorked, string? Notes);
 public record AttendanceSummaryDto(DateTime From, DateTime To, int Present, int Late, int Absent, int Leave, int HalfDay, decimal HoursWorked);
 public record CreateAttendanceRequest(int EmployeeId, DateTime AttendanceDate, DateTime? CheckIn, DateTime? CheckOut, AttendanceStatus Status, decimal? HoursWorked, string? Notes);
+
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public record ForgotPasswordRequest(string Email);
+public record ResetPasswordRequest(string Token, string NewPassword);
+public record AccountStatusDto(int UserId, int? EmployeeId, string Email, bool Active);
+public record ActivateEmployeeAccountRequest(string? Email);
+public record TenantAdminDto(int Id, string CompanyName, string Status, int UserCount, int EmployeeCount);
+public record CreateTenantRequest(string CompanyName, string? KraPin, string? Email, string? Phone, string? Address, string? Subdomain);
+public record UpdateTenantRequest(string CompanyName, string? KraPin, string? Email, string? Phone, string? Address, string? Subdomain, TenantStatus Status);
+public record CreatePlatformAdminRequest(string Name, string Email, string? TenantId, UserRole Role);
