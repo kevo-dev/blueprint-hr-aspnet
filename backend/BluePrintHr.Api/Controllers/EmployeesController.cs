@@ -66,6 +66,45 @@ public class EmployeesController(BluePrintHrDbContext db, IRequestContext contex
         return CreatedAtAction(nameof(Get), new { id = employee.Id }, ToDto(employee));
     }
 
+    [HttpPut("{id:int}")]
+    [Authorize(Policy = "CanManageEmployees")]
+    public async Task<ActionResult<EmployeeDto>> Update(int id, UpdateEmployeeRequest request)
+    {
+        var employee = await db.Employees.SingleOrDefaultAsync(x => x.Id == id && x.TenantId == context.TenantId);
+        if (employee is null) return NotFound();
+
+        var duplicate = await db.Employees.AnyAsync(x =>
+            x.TenantId == context.TenantId && x.EmployeeNo == request.EmployeeNo.Trim() && x.Id != id);
+        if (duplicate) return Conflict(new { message = "Employee number already exists for this tenant." });
+
+        employee.EmployeeNo = request.EmployeeNo.Trim();
+        employee.PayrollNo = request.PayrollNo;
+        employee.FirstName = request.FirstName.Trim();
+        employee.MiddleName = request.MiddleName;
+        employee.LastName = request.LastName.Trim();
+        employee.KraPin = request.KraPin.Trim().ToUpperInvariant();
+        employee.BasicSalary = request.BasicSalary;
+        employee.Email = request.Email;
+        employee.Phone = request.Phone;
+        employee.NssfNo = request.NssfNo;
+        employee.ShifNo = request.ShifNo;
+        employee.BranchId = request.BranchId;
+        employee.DepartmentId = request.DepartmentId;
+        employee.DesignationId = request.DesignationId;
+        employee.GradeId = request.GradeId;
+        employee.EmploymentTypeId = request.EmploymentTypeId;
+        employee.EmploymentDate = request.EmploymentDate;
+        employee.TerminationDate = request.TerminationDate;
+        employee.EmploymentStatus = string.IsNullOrWhiteSpace(request.EmploymentStatus) ? "Active" : request.EmploymentStatus.Trim();
+        employee.BankName = request.BankName;
+        employee.BankBranch = request.BankBranch;
+        employee.AccountNumber = request.AccountNumber;
+
+        await db.SaveChangesAsync();
+        await AuditAsync("UPDATE", "Employee", employee.Id, JsonSerializer.Serialize(new { employee.EmployeeNo, employee.EmploymentStatus }));
+        return Ok(ToDto(employee));
+    }
+
     private async Task AuditAsync(string action, string entity, int id, string details)
     {
         db.AuditLogs.Add(new AuditLog { TenantId = context.TenantId, UserId = context.UserId, UserName = User.Identity?.Name, Action = action, EntityType = entity, EntityId = id, Details = details, IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() });
