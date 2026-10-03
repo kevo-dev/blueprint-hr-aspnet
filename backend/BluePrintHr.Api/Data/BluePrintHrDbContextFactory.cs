@@ -23,6 +23,7 @@ public sealed class BluePrintHrDbContextFactory : IDesignTimeDbContextFactory<Bl
 
         var options = new DbContextOptionsBuilder<BluePrintHrDbContext>()
             .UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(5))
+            .UseSnakeCaseNamingConvention()
             .Options;
 
         return new BluePrintHrDbContext(options);
