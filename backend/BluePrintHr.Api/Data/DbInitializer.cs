@@ -12,10 +12,15 @@ public static class DbInitializer
         var db = scope.ServiceProvider.GetRequiredService<BluePrintHrDbContext>();
         var passwordService = scope.ServiceProvider.GetRequiredService<IPasswordService>();
 
-        if (db.Database.IsRelational() && configuration.GetValue<bool>("Database:ApplyMigrations"))
-            await db.Database.MigrateAsync();
+        if (db.Database.IsRelational())
+        {
+            if (configuration.GetValue<bool>("Database:ApplyMigrations"))
+                await db.Database.MigrateAsync();
+        }
         else
+        {
             await db.Database.EnsureCreatedAsync();
+        }
 
         if (await db.Tenants.AnyAsync()) return;
         if (!configuration.GetValue<bool>("Database:SeedDemoData")) return;
