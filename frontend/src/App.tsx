@@ -8,10 +8,12 @@ type Tab = 'dashboard' | 'employees' | 'organization' | 'payroll' | 'leave' | 'e
 
 const formatMoney = (value: number) => `KES ${Number(value || 0).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const formatDate = (value?: string) => value ? new Date(value).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
-const canManagePeople = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'HrManager'].includes(role)
-const canManagePayroll = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'PayrollManager'].includes(role)
-const canApprove = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'HrManager', 'PayrollManager'].includes(role)
-const canViewAudit = (role: string) => ['SuperAdmin', 'CompanyAdmin', 'HrManager'].includes(role)
+const roleKey = (role: string) => role.replace(/\s+/g, '').toLowerCase()
+const canManagePeople = (role: string) => ['superadmin', 'companyadmin', 'hrmanager'].includes(roleKey(role))
+const canManagePayroll = (role: string) => ['superadmin', 'companyadmin', 'payrollmanager'].includes(roleKey(role))
+const canApprove = (role: string) => ['superadmin', 'companyadmin', 'hrmanager', 'payrollmanager'].includes(roleKey(role))
+const canViewAudit = (role: string) => ['superadmin', 'companyadmin', 'hrmanager'].includes(roleKey(role))
+const canViewReports = (role: string) => ['superadmin', 'companyadmin', 'hrmanager', 'payrollmanager'].includes(roleKey(role))
 
 function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -108,7 +110,7 @@ function App() {
   const navItems = useMemo(() => {
     const base: { id: Tab; label: string; hint: string }[] = [{ id: 'dashboard', label: 'Dashboard', hint: 'Overview' }, { id: 'leave', label: 'Leave', hint: 'Requests and balances' }, { id: 'ess', label: 'ESS portal', hint: 'Your employee records' }]
     if (!user || !canManagePeople(user.role)) return base
-    return [{ id: 'dashboard', label: 'Dashboard', hint: 'Overview' }, { id: 'employees', label: 'Employee master', hint: 'People records' }, { id: 'organization', label: 'Organization', hint: 'Structure and units' }, { id: 'payroll', label: 'Kenyan payroll', hint: 'Statutory processing' }, { id: 'leave', label: 'Leave', hint: 'Requests and balances' }, { id: 'ess', label: 'ESS portal', hint: 'Self-service' }, { id: 'attendance', label: 'Attendance', hint: 'Time and attendance' }, ...(canViewAudit(user.role) ? [{ id: 'audit' as Tab, label: 'Audit trail', hint: 'Change history' }] : []), { id: 'reports', label: 'Reports', hint: 'SSRS catalog' }]
+    return [{ id: 'dashboard', label: 'Dashboard', hint: 'Overview' }, { id: 'employees', label: 'Employee master', hint: 'People records' }, { id: 'organization', label: 'Organization', hint: 'Structure and units' }, { id: 'payroll', label: 'Kenyan payroll', hint: 'Statutory processing' }, { id: 'leave', label: 'Leave', hint: 'Requests and balances' }, { id: 'ess', label: 'ESS portal', hint: 'Self-service' }, { id: 'attendance', label: 'Attendance', hint: 'Time and attendance' }, ...(canViewAudit(user.role) ? [{ id: 'audit' as Tab, label: 'Audit trail', hint: 'Change history' }] : []), ...(canViewReports(user.role) ? [{ id: 'reports' as Tab, label: 'Reports', hint: 'Live HR reporting' }] : [])]
   }, [user])
 
   const onLogin = async (event: FormEvent) => {
