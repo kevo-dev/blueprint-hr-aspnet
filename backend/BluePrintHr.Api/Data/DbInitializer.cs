@@ -22,8 +22,36 @@ public static class DbInitializer
             await db.Database.EnsureCreatedAsync();
         }
 
-        if (await db.Tenants.AnyAsync()) return;
         if (!configuration.GetValue<bool>("Database:SeedDemoData")) return;
+
+        // The first bootstrap attempt can fail after creating the tenant but before
+        // creating users. Recover that partial seed on the next startup so the
+        // administrator bootstrap can complete cleanly.
+        if (!await db.Users.AnyAsync())
+        {
+            var partialTenant = await db.Tenants.SingleOrDefaultAsync(x =>
+                x.Subdomain == "blueprint" && x.CompanyName == "BluePrint Kenya Ltd");
+
+            if (partialTenant is not null)
+            {
+                await db.LeaveBalances.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.LeaveRequests.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.PayrollTransactions.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.Employees.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.PayrollPeriods.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.LeaveTypes.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.Departments.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.Branches.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.Designations.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.Grades.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.EmploymentTypes.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.AuditLogs.Where(x => x.TenantId == partialTenant.Id).ExecuteDeleteAsync();
+                await db.Tenants.Where(x => x.Id == partialTenant.Id).ExecuteDeleteAsync();
+            }
+        }
+
+        if (await db.Users.AnyAsync()) return;
+        if (await db.Tenants.AnyAsync()) return;
 
         var adminEmail = configuration["Seed:AdminEmail"] ?? "admin@blueprinthr.co.ke";
         var adminPassword = configuration["Seed:AdminPassword"];
