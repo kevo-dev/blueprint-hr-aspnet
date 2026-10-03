@@ -18,6 +18,13 @@ public static class DbInitializer
             await db.Database.EnsureCreatedAsync();
 
         if (await db.Tenants.AnyAsync()) return;
+        if (!configuration.GetValue<bool>("Database:SeedDemoData")) return;
+
+        var adminEmail = configuration["Seed:AdminEmail"] ?? "admin@blueprinthr.co.ke";
+        var adminPassword = configuration["Seed:AdminPassword"];
+        var employeePassword = configuration["Seed:EmployeePassword"];
+        if (string.IsNullOrWhiteSpace(adminPassword) || string.IsNullOrWhiteSpace(employeePassword))
+            throw new InvalidOperationException("Seed passwords are required when Database:SeedDemoData is enabled.");
 
         var tenant = new Tenant
         {
@@ -75,8 +82,8 @@ public static class DbInitializer
             {
                 TenantId = tenant.Id,
                 Name = "BluePrint Administrator",
-                Email = "admin@blueprinthr.co.ke",
-                PasswordHash = passwordService.Hash("BluePrint!2026"),
+                Email = adminEmail,
+                PasswordHash = passwordService.Hash(adminPassword),
                 Role = UserRole.CompanyAdmin
             },
             new User
@@ -84,7 +91,7 @@ public static class DbInitializer
                 TenantId = tenant.Id,
                 Name = "Amina Njoroge",
                 Email = employee.Email!,
-                PasswordHash = passwordService.Hash("Employee!2026"),
+                PasswordHash = passwordService.Hash(employeePassword),
                 Role = UserRole.Employee,
                 EmployeeId = employee.Id
             });
