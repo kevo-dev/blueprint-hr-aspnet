@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using BluePrintHr.Api.Data;
+using BluePrintHr.Api.Middleware;
 using BluePrintHr.Api.Models;
 using BluePrintHr.Api.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -82,6 +83,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("frontend");
+app.UseMiddleware<CsrfOriginMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "BluePrintHr.Api" }));
