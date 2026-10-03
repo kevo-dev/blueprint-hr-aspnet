@@ -32,6 +32,7 @@ else
 }
 
 builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
 builder.Services.AddScoped<IPayrollCalculator, KenyaPayrollCalculator>();
 
