@@ -25,6 +25,24 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
     {
         base.OnModelCreating(modelBuilder);
 
+        // The Supabase schema uses plural snake_case table names.
+        // EF Core does not pluralize table names by default, so map them explicitly.
+        modelBuilder.Entity<User>().ToTable("users");
+        modelBuilder.Entity<Tenant>().ToTable("tenants");
+        modelBuilder.Entity<Branch>().ToTable("branches");
+        modelBuilder.Entity<Department>().ToTable("departments");
+        modelBuilder.Entity<Designation>().ToTable("designations");
+        modelBuilder.Entity<Grade>().ToTable("grades");
+        modelBuilder.Entity<EmploymentType>().ToTable("employment_types");
+        modelBuilder.Entity<Employee>().ToTable("employees");
+        modelBuilder.Entity<PayrollPeriod>().ToTable("payroll_periods");
+        modelBuilder.Entity<PayrollTransaction>().ToTable("payroll_transactions");
+        modelBuilder.Entity<LeaveType>().ToTable("leave_types");
+        modelBuilder.Entity<LeaveBalance>().ToTable("leave_balances");
+        modelBuilder.Entity<LeaveRequest>().ToTable("leave_requests");
+        modelBuilder.Entity<AuditLog>().ToTable("audit_logs");
+        modelBuilder.Entity<ReportDefinition>().ToTable("report_definitions");
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(x => x.Role).HasConversion<string>().HasMaxLength(32);
