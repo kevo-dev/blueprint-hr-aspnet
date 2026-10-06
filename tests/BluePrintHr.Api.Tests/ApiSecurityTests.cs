@@ -2,6 +2,7 @@ using System.Net;
 using BluePrintHr.Api.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Xunit;
 
 namespace BluePrintHr.Api.Tests;
 
