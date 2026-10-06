@@ -38,6 +38,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
 builder.Services.AddScoped<IPayrollCalculator, KenyaPayrollCalculator>();
+builder.Services.AddScoped<IPayrollTaxService, PayrollTaxService>();
 
 var configuredSameSite = builder.Configuration["Auth:CookieSameSite"];
 var cookieSameSite = Enum.TryParse<SameSiteMode>(configuredSameSite, ignoreCase: true, out var parsedSameSite)
