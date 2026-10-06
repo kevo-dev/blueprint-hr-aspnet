@@ -95,7 +95,7 @@ public class PlatformController(BluePrintHrDbContext db, IPasswordService passwo
         await db.SaveChangesAsync();
         var frontend = (HttpContext.RequestServices.GetRequiredService<IConfiguration>()["App:FrontendUrl"] ?? "").TrimEnd('/');
         var link = string.IsNullOrWhiteSpace(frontend) ? rawToken : $"{frontend}/reset-password?token={Uri.EscapeDataString(rawToken)}";
-        await email.SendAsync(user.Email, "Your BluePrint HR administrator account", $"<p>Your tenant administrator account has been created.</p><p><a href="{System.Net.WebUtility.HtmlEncode(link)}">Set your password</a></p>");
+        await email.SendAsync(user.Email, "Your BluePrint HR administrator account", $"<p>Your tenant administrator account has been created.</p><p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Set your password</a></p>");
         return Ok(new { user.Id, user.Email, role = user.Role.ToString(), user.Active });
     }
 
