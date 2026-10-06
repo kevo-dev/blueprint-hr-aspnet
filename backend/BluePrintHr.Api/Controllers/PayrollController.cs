@@ -11,7 +11,7 @@ namespace BluePrintHr.Api.Controllers;
 [ApiController]
 [Route("api/payroll")]
 [Authorize]
-public class PayrollController(BluePrintHrDbContext db, IRequestContext context, IPayrollCalculator calculator, INotificationService notifications) : ControllerBase
+public class PayrollController(BluePrintHrDbContext db, IRequestContext context, IPayrollCalculator calculator, IPayrollTaxService taxService, INotificationService notifications) : ControllerBase
 {
     [HttpGet("periods")]
     public async Task<ActionResult<IReadOnlyList<PayrollPeriodDto>>> Periods()
@@ -93,7 +93,8 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
             var componentDeductions = employeeComponents.Where(x => x.ComponentType == "Deduction").Sum(x => x.Amount);
             var totalAllowances = request.Allowances + componentAllowances;
             var totalOtherDeductions = request.OtherDeductions + componentDeductions;
-            var result = calculator.Calculate(employee.BasicSalary, totalAllowances, totalOtherDeductions, request.Allowances + taxableAllowances);
+            var tax = await taxService.GetConfigurationAsync(context.TenantId, new DateTime(period.Year, period.Month, 1));
+            var result = calculator.Calculate(employee.BasicSalary, totalAllowances, totalOtherDeductions, tax, request.Allowances + taxableAllowances);
             transactions.Add(new PayrollTransaction
             {
                 TenantId = context.TenantId,
