@@ -86,37 +86,23 @@ stream
 
             using var stream = new MemoryStream();
             var offsets = new List<long> { 0 };
-            WriteAscii(stream, "%PDF-1.4
-%\xE2\xE3\xCF\xD3
-");
+            WriteAscii(stream, "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
             for (var i = 0; i < objects.Count; i++)
             {
                 offsets.Add(stream.Position);
-                WriteAscii(stream, $"{i + 1} 0 obj
-{objects[i]}
-endobj
-");
+                WriteAscii(stream, $"{i + 1} 0 obj\n{objects[i]}\nendobj\n");
             }
 
             var xref = stream.Position;
-            WriteAscii(stream, $"xref
-0 {objects.Count + 1}
-");
-            WriteAscii(stream, "0000000000 65535 f 
-");
+            WriteAscii(stream, $"xref\n0 {objects.Count + 1}\n");
+            WriteAscii(stream, "0000000000 65535 f \n");
             for (var i = 1; i <= objects.Count; i++)
-                WriteAscii(stream, $"{offsets[i]:D10} 00000 n 
-");
-            WriteAscii(stream, $"trailer
-<< /Size {objects.Count + 1} /Root 1 0 R >>
-startxref
-{xref}
-%%EOF
-");
+                WriteAscii(stream, $"{offsets[i]:D10} 00000 n \n");
+            WriteAscii(stream, $"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
             return stream.ToArray();
         }
 
-        private static string Escape(string value) => value.Replace("\", "\\").Replace("(", "\(").Replace(")", "\)");
+        private static string Escape(string value) => value.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)");
 
         private static void WriteAscii(Stream stream, string value)
         {
