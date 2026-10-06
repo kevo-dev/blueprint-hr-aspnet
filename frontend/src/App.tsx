@@ -268,6 +268,7 @@ function DashboardView({ dashboard, employees, transactions, openRequests, onNav
 
 function EmployeesView({ employees, organization, form, setForm, onSubmit, canManage, onRefresh, showNotice }: { employees: Employee[]; organization: Organization | null; form: Record<string, string>; setForm: (value: Record<string, string>) => void; onSubmit: (event: FormEvent) => void; canManage: boolean; onRefresh: () => Promise<void>; showNotice: (type: 'success' | 'error', text: string) => void }) {
   const [editing, setEditing] = useState<Employee | null>(null)
+  const [importing, setImporting] = useState(false)
   const [edit, setEdit] = useState<Record<string, string>>({})
 
   const beginEdit = (employee: Employee) => {
@@ -306,8 +307,17 @@ function EmployeesView({ employees, organization, form, setForm, onSubmit, canMa
 
   const setEditField = (key: string, value: string) => setEdit(previous => ({ ...previous, [key]: value }))
 
+  const importStaff = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setImporting(true)
+    try { const result = await api.importEmployees(file, true); await onRefresh(); showNotice(result.errors.length ? 'error' : 'success', `Imported ${result.imported} of ${result.total} staff rows${result.errors.length ? `; ${result.errors.length} rows need review.` : '.'}`) }
+    catch (error) { showNotice('error', error instanceof Error ? error.message : 'Could not import staff data.') }
+    finally { setImporting(false); event.target.value = '' }
+  }
+
   return <div className="stack-layout">
-    <Panel title="Employee master" eyebrow="PEOPLE RECORDS" action={<span className="count-pill">{employees.length} records</span>}>
+    <Panel title="Employee master" eyebrow="PEOPLE RECORDS" action={<span className="action-row"><span className="count-pill">{employees.length} records</span>{canManage && <label className="small-button">Import CSV / JSON / XLSX<input type="file" accept=".csv,.json,.xlsx" onChange={importStaff} disabled={importing} style={{ display: "none" }} /></label>}</span>}>
       <p className="muted">Create, edit, and deactivate employee profiles. All mutations are tenant-scoped and audited.</p>
       {canManage && <form className="form-grid compact-form" onSubmit={onSubmit}>
         <Field label="Employee number" value={form.employeeNo} onChange={value => setForm({ ...form, employeeNo: value })} required />
