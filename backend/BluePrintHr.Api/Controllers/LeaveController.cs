@@ -284,4 +284,20 @@ public class LeaveController(BluePrintHrDbContext db, IRequestContext context, I
 
         return NoContent();
     }
+    private async Task AuditAsync(string action, string entity, int id, string details)
+    {
+        db.AuditLogs.Add(new AuditLog
+        {
+            TenantId = context.TenantId,
+            UserId = context.UserId,
+            UserName = User.Identity?.Name,
+            Action = action,
+            EntityType = entity,
+            EntityId = id,
+            Details = details,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+        });
+        await db.SaveChangesAsync();
+    }
+
 }
