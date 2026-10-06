@@ -85,6 +85,7 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
         var oldTransactions = await db.PayrollTransactions.Where(x => x.TenantId == context.TenantId && x.PayrollPeriodId == period.Id).ToListAsync();
         db.PayrollTransactions.RemoveRange(oldTransactions);
         var transactions = new List<PayrollTransaction>();
+        var tax = await taxService.GetConfigurationAsync(context.TenantId, new DateTime(period.Year, period.Month, 1));
         foreach (var employee in employees)
         {
             var employeeComponents = components.Where(x => x.EmployeeId == employee.Id).ToList();
@@ -93,7 +94,6 @@ public class PayrollController(BluePrintHrDbContext db, IRequestContext context,
             var componentDeductions = employeeComponents.Where(x => x.ComponentType == "Deduction").Sum(x => x.Amount);
             var totalAllowances = request.Allowances + componentAllowances;
             var totalOtherDeductions = request.OtherDeductions + componentDeductions;
-            var tax = await taxService.GetConfigurationAsync(context.TenantId, new DateTime(period.Year, period.Month, 1));
             var result = calculator.Calculate(employee.BasicSalary, totalAllowances, totalOtherDeductions, tax, request.Allowances + taxableAllowances);
             transactions.Add(new PayrollTransaction
             {
