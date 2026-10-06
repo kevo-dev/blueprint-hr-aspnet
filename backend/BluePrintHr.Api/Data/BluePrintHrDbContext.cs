@@ -24,6 +24,8 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
     public DbSet<ReportDefinition> ReportDefinitions => Set<ReportDefinition>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<PayrollTaxTable> PayrollTaxTables => Set<PayrollTaxTable>();
+    public DbSet<PayrollTaxBand> PayrollTaxBands => Set<PayrollTaxBand>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +49,27 @@ public class BluePrintHrDbContext(DbContextOptions<BluePrintHrDbContext> options
         modelBuilder.Entity<AuditLog>().ToTable("audit_logs");
         modelBuilder.Entity<ReportDefinition>().ToTable("report_definitions");
         modelBuilder.Entity<AttendanceRecord>().ToTable("attendance_records");
+
+        modelBuilder.Entity<PayrollTaxTable>(entity =>
+        {
+            entity.ToTable("payroll_tax_tables");
+            entity.Property(x => x.TaxType).HasConversion<string>().HasMaxLength(32);
+            entity.Property(x => x.Rate).HasPrecision(9, 6);
+            entity.Property(x => x.EmployerRate).HasPrecision(9, 6);
+            entity.Property(x => x.PersonalRelief).HasPrecision(18, 2);
+            entity.Property(x => x.MinimumAmount).HasPrecision(18, 2);
+            entity.Property(x => x.MaximumAmount).HasPrecision(18, 2);
+            entity.HasIndex(x => new { x.TenantId, x.TaxType, x.EffectiveFrom });
+            entity.HasMany(x => x.Bands).WithOne(x => x.PayrollTaxTable).HasForeignKey(x => x.PayrollTaxTableId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<PayrollTaxBand>(entity =>
+        {
+            entity.ToTable("payroll_tax_bands");
+            entity.Property(x => x.LowerBound).HasPrecision(18, 2);
+            entity.Property(x => x.UpperBound).HasPrecision(18, 2);
+            entity.Property(x => x.Rate).HasPrecision(9, 6);
+            entity.HasIndex(x => new { x.PayrollTaxTableId, x.SortOrder }).IsUnique();
+        });
 
         modelBuilder.Entity<PasswordResetToken>(entity =>
         {
