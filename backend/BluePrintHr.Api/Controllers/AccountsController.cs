@@ -139,7 +139,7 @@ public class AccountsController(BluePrintHrDbContext db, IRequestContext context
             await db.SaveChangesAsync();
             var frontend = (HttpContext.RequestServices.GetRequiredService<IConfiguration>()["App:FrontendUrl"] ?? "").TrimEnd('/');
             var link = string.IsNullOrWhiteSpace(frontend) ? rawToken : $"{frontend}/reset-password?token={Uri.EscapeDataString(rawToken)}";
-            await email.SendAsync(user.Email, "Your BluePrint HR account", $"<p>Your BluePrint HR employee account is now active.</p><p><a href="{System.Net.WebUtility.HtmlEncode(link)}">Set your password</a></p><p>This link expires in 24 hours.</p>");
+            await email.SendAsync(user.Email, "Your BluePrint HR account", $"<p>Your BluePrint HR employee account is now active.</p><p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Set your password</a></p><p>This link expires in 24 hours.</p>");
         }
         return Ok(new AccountStatusDto(user.Id, user.EmployeeId, user.Email, user.Active));
     }
