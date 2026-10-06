@@ -18,7 +18,7 @@ public class EssController(BluePrintHrDbContext db, IRequestContext context) : C
         if (!context.EmployeeId.HasValue) return Ok(null);
         var employee = await db.Employees.AsNoTracking().SingleOrDefaultAsync(x => x.Id == context.EmployeeId && x.TenantId == context.TenantId);
         if (employee is null) return NotFound();
-        return Ok(new EmployeeDto(employee.Id, employee.EmployeeNo, employee.PayrollNo, $"{employee.FirstName} {employee.LastName}", employee.Email, employee.Phone, employee.KraPin, employee.NssfNo, employee.ShifNo, employee.EmploymentStatus, employee.BasicSalary, employee.BankName, employee.AccountNumber, employee.DepartmentId, employee.BranchId));
+        return Ok(new EmployeeDto(employee.Id, employee.EmployeeNo, employee.PayrollNo, $"{employee.FirstName} {employee.MiddleName} {employee.LastName}".Replace("  ", " ").Trim(), employee.FirstName, employee.MiddleName, employee.LastName, employee.Email, employee.Phone, employee.KraPin, employee.NssfNo, employee.ShifNo, employee.EmploymentStatus, employee.BasicSalary, employee.BankName, employee.BankBranch, employee.AccountNumber, employee.DepartmentId, employee.BranchId, employee.DesignationId, employee.GradeId, employee.EmploymentTypeId, employee.EmploymentDate, employee.TerminationDate));
     }
 
     [HttpGet("payslips")]
