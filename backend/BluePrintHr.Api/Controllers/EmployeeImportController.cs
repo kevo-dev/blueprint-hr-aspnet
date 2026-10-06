@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using ClosedXML.Excel;
 using BluePrintHr.Api.Data;
 using BluePrintHr.Api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -28,10 +29,12 @@ public class EmployeeImportController(BluePrintHrDbContext db, IRequestContext c
             rows = ParseCsv(await new StreamReader(stream, Encoding.UTF8, true).ReadToEndAsync(cancellationToken));
         else if (extension == ".json")
             rows = await ParseJsonAsync(stream, cancellationToken);
-        else if (extension is ".xlsx" or ".xls")
-            return BadRequest(new { message = "For XLSX files, export the worksheet as CSV or JSON before importing. This keeps the API dependency-free and preserves the full staff field mapping." });
+        else if (extension == ".xlsx")
+            rows = ParseXlsx(stream);
+        else if (extension == ".xls")
+            return BadRequest(new { message = "Legacy .xls files are not supported. Save the workbook as .xlsx and import again." });
         else
-            return BadRequest(new { message = "Supported formats are CSV and JSON." });
+            return BadRequest(new { message = "Supported formats are CSV, JSON and XLSX." });
 
         var result = new EmployeeImportResult();
         var existing = await db.Employees.Where(x => x.TenantId == context.TenantId).ToDictionaryAsync(x => x.EmployeeNo, StringComparer.OrdinalIgnoreCase, cancellationToken);
@@ -131,6 +134,27 @@ public class EmployeeImportController(BluePrintHrDbContext db, IRequestContext c
         if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var result)) return result.ToUniversalTime();
         if (DateTime.TryParse(value, CultureInfo.GetCultureInfo("en-KE"), DateTimeStyles.AssumeLocal, out result)) return result.ToUniversalTime();
         throw new InvalidOperationException($"Invalid date value '{value}'.");
+    }
+
+    private static List<Dictionary<string, string?>> ParseXlsx(Stream stream)
+    {
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheets.FirstOrDefault();
+        if (worksheet is null) throw new InvalidOperationException("The workbook contains no worksheets.");
+
+        var range = worksheet.RangeUsed();
+        if (range is null) return new();
+
+        var headers = range.FirstRow().Cells().Select(x => x.GetString().Trim()).ToList();
+        var rows = new List<Dictionary<string, string?>>();
+        foreach (var row in range.RowsUsed().Skip(1))
+        {
+            var item = new Dictionary<string, string?>();
+            for (var i = 0; i < headers.Count; i++)
+                item[headers[i]] = row.Cell(i + 1).GetString().Trim();
+            rows.Add(item);
+        }
+        return rows;
     }
 
     private static async Task<List<Dictionary<string, string?>>> ParseJsonAsync(Stream stream, CancellationToken cancellationToken)
