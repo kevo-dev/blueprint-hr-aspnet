@@ -48,5 +48,5 @@ public class PayrollStatutoryController(BluePrintHrDbContext db, IRequestContext
         return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"statutory-{selected}-{period.Year}-{period.Month:D2}.csv");
     }
 
-    private static string Escape(string value) => $""{value.Replace(""", """")}"";
+    private static string Escape(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
 }
