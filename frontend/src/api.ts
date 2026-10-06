@@ -20,6 +20,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>
 }
 
+export type PayrollTaxBand = { lowerBound: number; upperBound?: number | null; rate: number; sortOrder: number }
+export type PayrollTaxTable = { id: number; tenantId?: number | null; taxType: string; name: string; effectiveFrom: string; effectiveTo?: string | null; rate?: number | null; employerRate?: number | null; personalRelief?: number | null; minimumAmount?: number | null; maximumAmount?: number | null; active: boolean; bands: PayrollTaxBand[] }
+
 export type User = { id: number; name: string; email: string; role: string; tenantId: number; employeeId?: number | null }
 export type Tenant = { id: number; companyName: string; kraPin?: string; email?: string; phone?: string; address?: string; status: string }
 export type Dashboard = { totalEmployees: number; monthlyGross: number; branches: number; departments: number; payrollStatus: string; tenant: Tenant; user: User }
@@ -62,6 +65,12 @@ export const api = {
   statutoryReport: (periodId: number, type = 'all', csv = false) => request<any>('/api/payroll/statutory?payrollPeriodId=' + periodId + '&type=' + encodeURIComponent(type) + '&csv=' + csv),
   dashboard: () => request<Dashboard>('/api/dashboard'),
   employees: () => request<Employee[]>('/api/employees'),
+  importEmployees: async (file: File, updateExisting = true) => {
+    const form = new FormData(); form.append('file', file)
+    const response = await fetch(`${API_BASE === '/api' ? '/api' : API_BASE}/employees/import?updateExisting=${updateExisting}`, { method: 'POST', credentials: 'include', body: form })
+    if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || `Import failed with status ${response.status}`) }
+    return response.json() as Promise<{ total: number; imported: number; errors: { row: number; error: string }[] }>
+  },
   createEmployee: (body: Record<string, unknown>) => request<Employee>('/api/employees', json(body)),
   updateEmployee: (id: number, body: Record<string, unknown>) => request<Employee>(`/api/employees/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deactivateEmployee: (id: number) => request<void>(`/api/employees/${id}`, { method: 'DELETE' }),
