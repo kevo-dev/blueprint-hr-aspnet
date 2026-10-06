@@ -58,7 +58,7 @@ public class AccountsController(BluePrintHrDbContext db, IRequestContext context
 
             var frontend = (HttpContext.RequestServices.GetRequiredService<IConfiguration>()["App:FrontendUrl"] ?? "").TrimEnd('/');
             var link = string.IsNullOrWhiteSpace(frontend) ? rawToken : $"{frontend}/reset-password?token={Uri.EscapeDataString(rawToken)}";
-            await email.SendAsync(user.Email, "BluePrint HR password reset", $"<p>A password reset was requested for your BluePrint HR account.</p><p><a href="{System.Net.WebUtility.HtmlEncode(link)}">Reset your password</a></p><p>This link expires in 30 minutes. If you did not request it, you can ignore this email.</p>");
+            await email.SendAsync(user.Email, "BluePrint HR password reset", $"<p>A password reset was requested for your BluePrint HR account.</p><p><a href=\"{System.Net.WebUtility.HtmlEncode(link)}\">Reset your password</a></p><p>This link expires in 30 minutes. If you did not request it, you can ignore this email.</p>");
         }
         return Ok(new { message = "If an active account exists for that email, password reset instructions have been sent." });
     }
