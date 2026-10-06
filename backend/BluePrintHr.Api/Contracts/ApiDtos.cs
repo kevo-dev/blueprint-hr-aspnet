@@ -52,3 +52,8 @@ public record TenantAdminDto(int Id, string CompanyName, string Status, int User
 public record CreateTenantRequest(string CompanyName, string? KraPin, string? Email, string? Phone, string? Address, string? Subdomain);
 public record UpdateTenantRequest(string CompanyName, string? KraPin, string? Email, string? Phone, string? Address, string? Subdomain, TenantStatus Status);
 public record CreatePlatformAdminRequest(string Name, string Email, string? TenantId, UserRole Role);
+
+public record PayrollTaxBandDto(decimal LowerBound, decimal? UpperBound, decimal Rate, int SortOrder);
+public record PayrollTaxTableDto(int Id, int? TenantId, string TaxType, string Name, DateTime EffectiveFrom, DateTime? EffectiveTo, decimal? Rate, decimal? EmployerRate, decimal? PersonalRelief, decimal? MinimumAmount, decimal? MaximumAmount, bool Active, IReadOnlyList<PayrollTaxBandDto> Bands);
+public record CreatePayrollTaxTableRequest(PayrollTaxType TaxType, string Name, DateTime EffectiveFrom, DateTime? EffectiveTo, decimal? Rate, decimal? EmployerRate, decimal? PersonalRelief, decimal? MinimumAmount, decimal? MaximumAmount, bool Active, IReadOnlyList<PayrollTaxBandDto> Bands);
+public record UpdatePayrollTaxTableRequest(string Name, DateTime EffectiveFrom, DateTime? EffectiveTo, decimal? Rate, decimal? EmployerRate, decimal? PersonalRelief, decimal? MinimumAmount, decimal? MaximumAmount, bool Active, IReadOnlyList<PayrollTaxBandDto> Bands);
