@@ -78,7 +78,7 @@ public class PayslipsController(BluePrintHrDbContext db, IRequestContext context
                 "<< /Type /Catalog /Pages 2 0 R >>",
                 "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
                 "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
-                $"<< /Length {Encoding.ASCII.GetByteCount(content.ToString())} >>
+                $@"<< /Length {Encoding.ASCII.GetByteCount(content.ToString())} >>
 stream
 {content}endstream",
                 "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
